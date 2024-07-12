@@ -127,7 +127,7 @@ function createTypeFileContents(model: Model, allModels: Model[], useType: boole
 ${imports}
 
 export ${useType ? 'type' : 'interface'} ${model.name}${typeNameSuffix} ${useType ? '= ' : ''}{
-${model.fields.map(field => createFieldLine(field, isCreateType)).join('\n')}
+${model.fields.map(field => createFieldLine(field, isCreateType, allModels)).join('\n')}
 }`
   return fileContents
 }
@@ -144,14 +144,18 @@ function createImportStatements(model: Model, allModels: Model[]): string {
     .join('\n')
 }
 
-function createFieldLine(field: Field, isCreateType: boolean) {
+function createFieldLine(field: Field, isCreateType: boolean, allModels: Model[]): string {
   const typeSuffix = field.isArray ? '[]' : ''
   const nullability = field.required ? '' : ' | null'
   const optional = field.required && !field.hasDefault ? '' : '?'
 
+  // Check if the field type is a relation to another model
+  const isRelation = allModels.some(model => model.name === field.typeAnnotation)
+  const typeAnnotation = isRelation ? `${field.typeAnnotation}EntityType` : field.typeAnnotation
+
   return isCreateType
-    ? `    ${field.name}${optional}: ${field.typeAnnotation}${typeSuffix}${nullability},`
-    : `    ${field.name}${field.required ? '' : '?'}: ${field.typeAnnotation}${typeSuffix},`
+    ? `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},`
+    : `    ${field.name}${field.required ? '' : '?'}: ${typeAnnotation}${typeSuffix},`
 }
 
 async function writeToFile(
