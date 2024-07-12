@@ -1,13 +1,13 @@
-# @kalissaac/prisma-typegen
+# prisma-typegen
 
 Generates full types (including relations) for TypeScript from a Prisma schema
 
 # Usage
 
 ```sh-session
-$ npx @kalissaac/prisma-typegen <output path> [prisma schema file] [--onlyDeclarations] [--generateInsertionTypes]
-$ npx @kalissaac/prisma-typegen ./interfaces ./schema.prisma
-$ npx @kalissaac/prisma-typegen ./interfaces/prismaTypes.ts ./schema.prisma
+$ npx prisma-typegen <output path> [prisma schema file] [--onlyDeclarations] [--generateInsertionTypes]
+$ npx prisma-typegen ./interfaces ./schema.prisma
+$ npx prisma-typegen ./interfaces/prismaTypes.ts ./schema.prisma
 ```
 
 ### Only output declarations

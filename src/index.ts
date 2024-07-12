@@ -13,7 +13,7 @@ if (argv.length < 1) {
 }
 
 if (argv[0] === 'help' || argv[0] === '--help') {
-  console.log(`@kalissaac/prisma-typegen
+  console.log(`prisma-typegen
   Usage: <output path> [prisma schema file]
 
   Options:

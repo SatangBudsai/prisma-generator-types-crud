@@ -110,7 +110,7 @@ function convertPrismaTypesToJSTypes(types: TypeTransfer, generateInsertionTypes
 }
 
 function createTypeFileContents(types: TypeTransfer, useType: boolean, generateInsertionTypes: boolean): string {
-  let fileContents = `// AUTO GENERATED FILE BY @kalissaac/prisma-typegen
+  let fileContents = `// AUTO GENERATED FILE BY prisma-typegen
 // DO NOT EDIT
 
 ${types.enums
