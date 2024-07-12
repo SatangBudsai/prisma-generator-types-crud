@@ -140,16 +140,18 @@ function createImportStatements(model: Model, allModels: Model[]): string {
   const uniqueRelatedModels = [...new Set(relatedModels)]
 
   return uniqueRelatedModels
-    .map(modelName => `import { ${modelName}EntityType } from './${modelName}/entityType'`)
+    .map(modelName => `import { ${modelName}EntityType } from '../${modelName}/entityType'`)
     .join('\n')
 }
 
 function createFieldLine(field: Field, isCreateType: boolean) {
+  const typeSuffix = field.isArray ? '[]' : ''
+  const nullability = field.required ? '' : ' | null'
+  const optional = field.required && !field.hasDefault ? '' : '?'
+
   return isCreateType
-    ? `    ${field.name}${field.required && !field.hasDefault ? '' : '?'}: ${field.typeAnnotation}${
-        field.isArray ? '[]' : ''
-      }${field.required ? '' : ' | null'},`
-    : `    ${field.name}${field.required ? '' : '?'}: ${field.typeAnnotation}${field.isArray ? '[]' : ''},`
+    ? `    ${field.name}${optional}: ${field.typeAnnotation}${typeSuffix}${nullability},`
+    : `    ${field.name}${field.required ? '' : '?'}: ${field.typeAnnotation}${typeSuffix},`
 }
 
 async function writeToFile(
