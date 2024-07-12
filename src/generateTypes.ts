@@ -1,3 +1,4 @@
+// generateTypes.ts
 import prismaInternals from '@prisma/internals'
 import { mkdir, writeFile } from 'fs/promises'
 import { join } from 'path'
@@ -43,8 +44,13 @@ export default async function generateTypes(
   const dmmf = await getDMMF({ datamodelPath: schemaPath })
   let types = distillDMMF(dmmf, generateInsertionTypes)
   types = convertPrismaTypesToJSTypes(types, generateInsertionTypes)
-  const fileContents = createTypeFileContents(types, useType, generateInsertionTypes)
-  writeToFile(fileContents, outputPath, generateDeclarations)
+
+  for (const model of types.models) {
+    const entityTypeContent = createTypeFileContents(model, useType, generateInsertionTypes, false)
+    const createTypeContent = createTypeFileContents(model, useType, generateInsertionTypes, true)
+    await writeToFile(entityTypeContent, outputPath, model.name, 'entityType.ts', generateDeclarations)
+    await writeToFile(createTypeContent, outputPath, model.name, 'createType.ts', generateDeclarations)
+  }
 }
 
 function distillDMMF(dmmf: DMMF.Document, generateInsertionTypes: boolean): TypeTransfer {
@@ -109,49 +115,44 @@ function convertPrismaTypesToJSTypes(types: TypeTransfer, generateInsertionTypes
   }
 }
 
-function createTypeFileContents(types: TypeTransfer, useType: boolean, generateInsertionTypes: boolean): string {
-  let fileContents = `// AUTO GENERATED FILE BY prisma-typegen
+function createTypeFileContents(
+  model: Model,
+  useType: boolean,
+  generateInsertionTypes: boolean,
+  isCreateType: boolean
+): string {
+  const fileContents = `// AUTO GENERATED FILE BY prisma-typegen
 // DO NOT EDIT
 
-${types.enums
-  .map(
-    prismaEnum => `
-export enum ${prismaEnum.name} {
-${prismaEnum.values.map(value => `    ${value} = '${value}',`).join('\n')}
-}`
-  )
-  .join('\n')}
-
-${types.models
-  .map(
-    model => `
 export ${useType ? 'type' : 'interface'} ${model.name} ${useType ? '= ' : ''}{
-${model.fields.map(field => createFieldLine(field, generateInsertionTypes)).join('\n')}
+${model.fields.map(field => createFieldLine(field, generateInsertionTypes, isCreateType)).join('\n')}
 }`
-  )
-  .join('\n')}
-`
   return fileContents
 }
 
-function createFieldLine(field: Field, generateInsertionTypes: boolean) {
-  return generateInsertionTypes
-    ? `    ${field.name}${field.required && !field.hasDefault ? '' : '?'}: ${field.typeAnnotation}${
-        field.isArray ? '[]' : ''
-      }${field.required ? '' : ' | null'},`
-    : `    ${field.name}${field.required ? '' : '?'}: ${field.typeAnnotation}${field.isArray ? '[]' : ''},`
+function createFieldLine(field: Field, generateInsertionTypes: boolean, isCreateType: boolean) {
+  if (isCreateType) {
+    return generateInsertionTypes
+      ? `    ${field.name}${field.required && !field.hasDefault ? '' : '?'}: ${field.typeAnnotation}${
+          field.isArray ? '[]' : ''
+        }${field.required ? '' : ' | null'},`
+      : `    ${field.name}${field.required ? '' : '?'}: ${field.typeAnnotation}${field.isArray ? '[]' : ''},`
+  } else {
+    return `    ${field.name}${field.required ? '' : '?'}: ${field.typeAnnotation}${field.isArray ? '[]' : ''},`
+  }
 }
 
-async function writeToFile(contents: string, outputPath: string, generateDeclarations: boolean) {
+async function writeToFile(
+  contents: string,
+  outputPath: string,
+  modelName: string,
+  fileName: string,
+  generateDeclarations: boolean
+) {
   try {
-    let directoryPath = outputPath
-    let filePath = outputPath
-    if (!outputPath.endsWith('.ts')) {
-      filePath = join(outputPath, generateDeclarations ? 'index.d.ts' : 'index.ts')
-    } else {
-      directoryPath = outputPath.split('/').slice(0, -1).join('/')
-    }
+    const directoryPath = join(outputPath, modelName)
     await mkdir(directoryPath, { recursive: true })
+    const filePath = join(directoryPath, fileName)
     await writeFile(filePath, contents, {
       encoding: 'utf8'
     })
