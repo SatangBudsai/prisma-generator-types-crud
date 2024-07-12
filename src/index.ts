@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import generateTypes from './generateTypes.js'
+import generateTypes from './generate-types.js'
 import { access } from 'fs/promises'
 import { constants } from 'fs'
 import { exit } from 'process'

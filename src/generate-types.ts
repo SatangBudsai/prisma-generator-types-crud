@@ -20,6 +20,7 @@ interface Field {
   required: boolean
   isArray: boolean
   hasDefault: boolean
+  isPrimaryKey: boolean
 }
 
 interface Enum {
@@ -62,8 +63,8 @@ export default async function generateTypes(
         const enumContent = createEnumFileContents(enumType)
         await writeToFile(
           enumContent,
-          join(outputPath, model.name),
-          model.name,
+          join(outputPath, 'enum'),
+          enumType.name,
           `${enumType.name}.ts`,
           generateDeclarations
         )
@@ -105,13 +106,14 @@ function distillDMMF(dmmf: DMMF.Document, isCreateType: boolean): TypeTransfer {
     types.models.push({
       name: model.name,
       fields: model.fields
-        .filter(f => !(f.relationName && isCreateType))
+        .filter(f => !(f.relationName && isCreateType) && (isCreateType || !f.isId))
         .map(f => ({
           name: f.name,
           typeAnnotation: f.type,
           required: f.isRequired,
           isArray: f.isList,
-          hasDefault: f.hasDefaultValue
+          hasDefault: f.hasDefaultValue,
+          isPrimaryKey: f.isId
         }))
     })
   })
@@ -196,7 +198,9 @@ function createImportStatements(model: Model, allModels: Model[], allEnums: Enum
     .map(modelName => `import { ${modelName}EntityType } from '../${modelName}/entityType'`)
     .join('\n')
 
-  const enumImports = uniqueEnumTypes.map(enumName => `import { ${enumName} } from './${enumName}'`).join('\n')
+  const enumImports = uniqueEnumTypes
+    .map(enumName => `import { ${enumName} } from '../enum/${enumName}/${enumName}.ts'`)
+    .join('\n')
 
   return `${modelImports}${modelImports && enumImports ? '\n' : ''}${enumImports}`
 }
