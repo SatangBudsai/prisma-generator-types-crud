@@ -32,28 +32,31 @@ interface Enum {
  * @param schemaPath Path to Prisma schema file
  * @param outputPath Path to output directory
  * @param generateDeclarations Whether to just generate type declarations or to generate a full TypeScript file
- * @param generateInsertionTypes If true, generates types for data to be inserted into a database
+ * @param useType Use type instead of interface
  */
 export default async function generateTypes(
   schemaPath: string,
   outputPath: string,
   generateDeclarations: boolean = false,
-  generateInsertionTypes: boolean = false,
   useType: boolean = false
 ) {
   const dmmf = await getDMMF({ datamodelPath: schemaPath })
-  let types = distillDMMF(dmmf, generateInsertionTypes)
-  types = convertPrismaTypesToJSTypes(types, generateInsertionTypes)
+  let typesEntity = distillDMMF(dmmf, false)
+  let typesCreate = distillDMMF(dmmf, true)
+  typesEntity = convertPrismaTypesToJSTypes(typesEntity, false)
+  typesCreate = convertPrismaTypesToJSTypes(typesCreate, true)
 
-  for (const model of types.models) {
-    const entityTypeContent = createTypeFileContents(model, useType, generateInsertionTypes, false)
-    const createTypeContent = createTypeFileContents(model, useType, generateInsertionTypes, true)
+  for (const model of typesEntity.models) {
+    const entityTypeContent = createTypeFileContents(model, typesEntity.models, useType, false)
     await writeToFile(entityTypeContent, outputPath, model.name, 'entityType.ts', generateDeclarations)
+  }
+  for (const model of typesCreate.models) {
+    const createTypeContent = createTypeFileContents(model, typesCreate.models, useType, true)
     await writeToFile(createTypeContent, outputPath, model.name, 'createType.ts', generateDeclarations)
   }
 }
 
-function distillDMMF(dmmf: DMMF.Document, generateInsertionTypes: boolean): TypeTransfer {
+function distillDMMF(dmmf: DMMF.Document, isCreateType: boolean): TypeTransfer {
   const types: TypeTransfer = {
     models: [],
     enums: []
@@ -70,7 +73,7 @@ function distillDMMF(dmmf: DMMF.Document, generateInsertionTypes: boolean): Type
     types.models.push({
       name: model.name,
       fields: model.fields
-        .filter(f => !(f.relationName && generateInsertionTypes))
+        .filter(f => !(f.relationName && isCreateType))
         .map(f => ({
           name: f.name,
           typeAnnotation: f.type,
@@ -84,7 +87,7 @@ function distillDMMF(dmmf: DMMF.Document, generateInsertionTypes: boolean): Type
   return types
 }
 
-function convertPrismaTypesToJSTypes(types: TypeTransfer, generateInsertionTypes: boolean): TypeTransfer {
+function convertPrismaTypesToJSTypes(types: TypeTransfer, isCreateType: boolean): TypeTransfer {
   const PrismaTypesMap = new Map([
     ['String', 'string'],
     ['Boolean', 'boolean'],
@@ -95,7 +98,7 @@ function convertPrismaTypesToJSTypes(types: TypeTransfer, generateInsertionTypes
     ['Json', 'any'],
     ['Bytes', 'Buffer']
   ])
-  PrismaTypesMap.set('DateTime', generateInsertionTypes ? '(Date | string)' : 'Date')
+  PrismaTypesMap.set('DateTime', isCreateType ? '(Date | string)' : 'Date')
 
   const models = types.models.map(model => {
     const fields = model.fields.map(field => ({
@@ -115,31 +118,38 @@ function convertPrismaTypesToJSTypes(types: TypeTransfer, generateInsertionTypes
   }
 }
 
-function createTypeFileContents(
-  model: Model,
-  useType: boolean,
-  generateInsertionTypes: boolean,
-  isCreateType: boolean
-): string {
+function createTypeFileContents(model: Model, allModels: Model[], useType: boolean, isCreateType: boolean): string {
+  const typeNameSuffix = isCreateType ? 'CreateType' : 'EntityType'
+  const imports = createImportStatements(model, allModels)
   const fileContents = `// AUTO GENERATED FILE BY prisma-typegen
 // DO NOT EDIT
 
-export ${useType ? 'type' : 'interface'} ${model.name} ${useType ? '= ' : ''}{
-${model.fields.map(field => createFieldLine(field, generateInsertionTypes, isCreateType)).join('\n')}
+${imports}
+
+export ${useType ? 'type' : 'interface'} ${model.name}${typeNameSuffix} ${useType ? '= ' : ''}{
+${model.fields.map(field => createFieldLine(field, isCreateType)).join('\n')}
 }`
   return fileContents
 }
 
-function createFieldLine(field: Field, generateInsertionTypes: boolean, isCreateType: boolean) {
-  if (isCreateType) {
-    return generateInsertionTypes
-      ? `    ${field.name}${field.required && !field.hasDefault ? '' : '?'}: ${field.typeAnnotation}${
-          field.isArray ? '[]' : ''
-        }${field.required ? '' : ' | null'},`
-      : `    ${field.name}${field.required ? '' : '?'}: ${field.typeAnnotation}${field.isArray ? '[]' : ''},`
-  } else {
-    return `    ${field.name}${field.required ? '' : '?'}: ${field.typeAnnotation}${field.isArray ? '[]' : ''},`
-  }
+function createImportStatements(model: Model, allModels: Model[]): string {
+  const relatedModels = model.fields
+    .filter(field => allModels.some(m => m.name === field.typeAnnotation))
+    .map(field => field.typeAnnotation)
+
+  const uniqueRelatedModels = [...new Set(relatedModels)]
+
+  return uniqueRelatedModels
+    .map(modelName => `import { ${modelName}EntityType } from './${modelName}/entityType'`)
+    .join('\n')
+}
+
+function createFieldLine(field: Field, isCreateType: boolean) {
+  return isCreateType
+    ? `    ${field.name}${field.required && !field.hasDefault ? '' : '?'}: ${field.typeAnnotation}${
+        field.isArray ? '[]' : ''
+      }${field.required ? '' : ' | null'},`
+    : `    ${field.name}${field.required ? '' : '?'}: ${field.typeAnnotation}${field.isArray ? '[]' : ''},`
 }
 
 async function writeToFile(
