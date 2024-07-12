@@ -1,0 +1,41 @@
+{
+  "name": "@kalissaac/prisma-typegen",
+  "version": "0.0.7",
+  "description": "Generates full types (including relations) for TypeScript from a Prisma schema",
+  "exports": "./lib/index.js",
+  "type": "module",
+  "bin": "./lib/index.js",
+  "main": "./lib/index.js",
+  "scripts": {
+    "build": "tsc && chmod +x ./lib/index.js",
+    "clean": "rm -rf ./lib",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "dependencies": {
+    "@prisma/internals": "^4.2.0"
+  },
+  "devDependencies": {
+    "prettier": "^2.7.1",
+    "typescript": "^4.7.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kalissaac/prisma-typegen.git"
+  },
+  "keywords": [
+    "prisma",
+    "typescript"
+  ],
+  "author": "Kalissaac",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Kalissaac/prisma-typegen/issues"
+  },
+  "homepage": "https://github.com/Kalissaac/prisma-typegen#readme",
+  "engines": {
+    "node": "^12.20.0 || ^14.13.1 || >=16.0.0"
+  },
+  "files": [
+    "lib"
+  ]
+}
