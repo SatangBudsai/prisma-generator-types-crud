@@ -101,19 +101,9 @@ export default async function generateTypes(
     await writeToFile(deleteTypeContent, outputPath, model.name, 'deleteType.ts', generateDeclarations)
   }
 
-  for (const model of typesEntity.models) {
-    for (const enumType of typesEntity.enums) {
-      if (model.fields.some(field => field.typeAnnotation === enumType.name)) {
-        const enumContent = createEnumFileContents(enumType)
-        await writeToFile(
-          enumContent,
-          join(outputPath, 'enum'),
-          enumType.name,
-          `${enumType.name}.ts`,
-          generateDeclarations
-        )
-      }
-    }
+  for (const enumType of typesEntity.enums) {
+    const enumContent = createEnumFileContents(enumType)
+    await writeToFile(enumContent, join(outputPath, 'enum'), enumType.name, `index.ts`, generateDeclarations)
   }
 }
 
@@ -134,7 +124,7 @@ async function clearOutputPaths(
       ])
     ]
     for (const modelName of models) {
-      const modelPath = join(outputPath, modelName)
+      const modelPath = join(outputPath, 'types', modelName)
       await rm(modelPath, { recursive: true, force: true })
       await mkdir(modelPath, { recursive: true })
     }
@@ -172,7 +162,7 @@ function distillDMMF(
           if (isCreateType) {
             return !f.relationName && !f.isId
           } else if (isUpdateType) {
-            return true
+            return !f.relationName
           } else if (isDeleteType) {
             return f.isId
           } else {
@@ -240,7 +230,7 @@ function createTypeFileContents(
     : isDeleteType
     ? 'DeleteType'
     : 'EntityType'
-  const imports = createImportStatements(model, allModels, allEnums)
+  const imports = createImportStatements(model, allModels, allEnums, isUpdateType)
   const fileContents = `// AUTO GENERATED FILE BY prisma-typegen
 // DO NOT EDIT
 
@@ -264,7 +254,9 @@ ${enumValues}
 }`
 }
 
-function createImportStatements(model: Model, allModels: Model[], allEnums: Enum[]): string {
+function createImportStatements(model: Model, allModels: Model[], allEnums: Enum[], isUpdateType: boolean): string {
+  if (isUpdateType) return '' // Do not import related models for update types
+
   const relatedModels = model.fields
     .filter(field => allModels.some(m => m.name === field.typeAnnotation))
     .map(field => field.typeAnnotation)
@@ -280,9 +272,7 @@ function createImportStatements(model: Model, allModels: Model[], allEnums: Enum
     .map(modelName => `import { ${modelName}EntityType } from '../${modelName}/entityType'`)
     .join('\n')
 
-  const enumImports = uniqueEnumTypes
-    .map(enumName => `import { ${enumName} } from '../enum/${enumName}/${enumName}'`)
-    .join('\n')
+  const enumImports = uniqueEnumTypes.map(enumName => `import { ${enumName} } from '../../enum/${enumName}'`).join('\n')
 
   return `${modelImports}${modelImports && enumImports ? '\n' : ''}${enumImports}`
 }
@@ -312,6 +302,10 @@ function createFieldLine(
     return `    ${field.name}: ${typeAnnotation},`
   }
 
+  if (isUpdateType) {
+    return `    ${field.name}${field.required ? '' : '?'}: ${typeAnnotation}${typeSuffix},`
+  }
+
   return isCreateType
     ? `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},`
     : `    ${field.name}${field.required ? '' : '?'}: ${typeAnnotation}${typeSuffix},`
@@ -325,7 +319,7 @@ async function writeToFile(
   generateDeclarations: boolean
 ) {
   try {
-    const directoryPath = join(outputPath, modelName)
+    const directoryPath = join(outputPath, 'types', modelName)
     await mkdir(directoryPath, { recursive: true })
     const filePath = join(directoryPath, fileName)
     await writeFile(filePath, contents, {
