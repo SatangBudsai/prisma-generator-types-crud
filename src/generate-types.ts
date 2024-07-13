@@ -62,7 +62,7 @@ export default async function generateTypes(
       false,
       false
     )
-    await writeToFile(entityTypeContent, outputPath, model.name, 'entityType.ts', generateDeclarations)
+    await writeToFile(entityTypeContent, outputPath, model.name, 'entityType.ts', false)
   }
   for (const model of typesCreate.models) {
     const createTypeContent = createTypeFileContents(
@@ -74,7 +74,7 @@ export default async function generateTypes(
       false,
       false
     )
-    await writeToFile(createTypeContent, outputPath, model.name, 'createType.ts', generateDeclarations)
+    await writeToFile(createTypeContent, outputPath, model.name, 'createType.ts', false)
   }
   for (const model of typesUpdate.models) {
     const updateTypeContent = createTypeFileContents(
@@ -86,7 +86,7 @@ export default async function generateTypes(
       true,
       false
     )
-    await writeToFile(updateTypeContent, outputPath, model.name, 'updateType.ts', generateDeclarations)
+    await writeToFile(updateTypeContent, outputPath, model.name, 'updateType.ts', false)
   }
   for (const model of typesDelete.models) {
     const deleteTypeContent = createTypeFileContents(
@@ -98,12 +98,12 @@ export default async function generateTypes(
       false,
       true
     )
-    await writeToFile(deleteTypeContent, outputPath, model.name, 'deleteType.ts', generateDeclarations)
+    await writeToFile(deleteTypeContent, outputPath, model.name, 'deleteType.ts', false)
   }
 
   for (const enumType of typesEntity.enums) {
     const enumContent = createEnumFileContents(enumType)
-    await writeToFile(enumContent, join(outputPath, 'enum'), enumType.name, `index.ts`, generateDeclarations)
+    await writeToFile(enumContent, join(outputPath, 'enum'), enumType.name, `index.ts`, true)
   }
 }
 
@@ -311,15 +311,9 @@ function createFieldLine(
     : `    ${field.name}${field.required ? '' : '?'}: ${typeAnnotation}${typeSuffix},`
 }
 
-async function writeToFile(
-  contents: string,
-  outputPath: string,
-  modelName: string,
-  fileName: string,
-  generateDeclarations: boolean
-) {
+async function writeToFile(contents: string, outputPath: string, modelName: string, fileName: string, isEnum: boolean) {
   try {
-    const directoryPath = join(outputPath, 'types', modelName)
+    const directoryPath = isEnum ? join(outputPath, modelName) : join(outputPath, 'types', modelName)
     await mkdir(directoryPath, { recursive: true })
     const filePath = join(directoryPath, fileName)
     await writeFile(filePath, contents, {
