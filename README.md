@@ -5,14 +5,15 @@ Generates full types (including relations) for TypeScript from a Prisma schema
 # Usage
 
 ```sh-session
-$ npx prisma-generator-types-crud <output path> [prisma schema file] [--onlyDeclarations] [--generateInsertionTypes]
-$ npx prisma-generator-types-crud ./interfaces ./schema.prisma
-$ npx prisma-generator-types-crud ./interfaces/prismaTypes.ts ./schema.prisma
+$ npx prisma-generator-types-crud <output path> <schema.prisma path> [--useType] [--prettier]
+
 ```
 
-### Only output declarations
+# Example Command Generate
 
-If using JavaScript instead of TypeScript, pass `--onlyDeclarations` to allow the types to be used with JSDoc.
+```sh-session
+$ npx prisma-generator-types-crud ./prisma/generated/ ./prisma/schema.prisma --useType --prettier
+```
 
 ### Generate types for data to be inserted
 
@@ -26,8 +27,23 @@ If using this package to generate types that will be assigned to data to be inse
 
 By default, types are generated as an `interface`. If your use case requires using `type` instead, use the `--useType` flag.
 
+# Example Structure Folder Generate
+
+```sh-session
+[output folder]/
+      /enum
+          /[name enum]
+              /index.ts
+      /types
+          /[model prisma name]
+              /createType
+              /deleteType
+              /entityType
+              /updateType
+```
+
 <!-- prettier-ignore-start -->
-# Example
+# Example Schema Prisma
 
 ### Input Schema
 
@@ -94,57 +110,77 @@ export interface Post {
 }
 ```
 
-### Generated `index.ts` (or `index.d.ts`) in insertion mode (with `--generateInsertionTypes`)
+### Generated `enum/Role/index.ts` 
 
 ```typescript
 export enum Role {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-}
-
-export interface User {
-  id?: number,
-  createdAt?: (Date | string),
-  email: string,
-  name?: string | null,
-  role?: Role,
-}
-
-export interface Post {
-  id?: number,
-  createdAt?: (Date | string),
-  updatedAt: (Date | string),
-  published?: boolean,
-  title: string,
-  authorId?: number | null,
+  USER = "USER",
+  ADMIN = "ADMIN",
 }
 ```
 
-### Generated `index.ts` (or `index.d.ts`) with `--useType` option
+### Generated `types/User/createType.ts`
 
 ```typescript
-export enum Role {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-}
+// AUTO GENERATED FILE BY prisma-generator-types-crud
+// DO NOT EDIT
 
-export type User = {
-  id: number,
-  createdAt: Date,
-  email: string,
-  name?: string,
-  role: Role,
-  posts: Post[],
-}
+import { Role } from "../../enum/Role";
 
-export type Post = {
-  id: number,
-  createdAt: Date,
-  updatedAt: Date,
-  published: boolean,
-  title: string,
-  author?: User,
-  authorId?: number,
-}
+export type UserCreateType = {
+  createdAt?: Date | string;
+  email: string;
+  name?: string | null;
+  role?: Role;
+};
+```
+
+### Generated `types/User/deleteType.ts`
+
+```typescript
+// AUTO GENERATED FILE BY prisma-generator-types-crud
+// DO NOT EDIT
+
+export type UserDeleteType = {
+  id: number;
+};
+```
+
+### Generated `types/User/entityType.ts`
+
+```typescript
+// AUTO GENERATED FILE BY prisma-generator-types-crud
+// DO NOT EDIT
+
+import { PostEntityType } from "../Post/entityType";
+import { Role } from "../../enum/Role";
+
+export type UserEntityType = {
+  id: number;
+  createdAt: Date;
+  email: string;
+  name?: string;
+  role: Role;
+  posts: PostEntityType[];
+};
+
+```
+
+### Generated `types/User/updateType.ts`
+
+```typescript
+// AUTO GENERATED FILE BY prisma-generator-types-crud
+// DO NOT EDIT
+
+import { Role } from "../../enum/Role";
+
+export type UserUpdateType = {
+  id: number;
+  createdAt: Date;
+  email: string;
+  name?: string;
+  role: Role;
+};
+
 ```
 <!-- prettier-ignore-end -->
