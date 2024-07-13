@@ -106,14 +106,22 @@ function distillDMMF(dmmf: DMMF.Document, isCreateType: boolean): TypeTransfer {
     types.models.push({
       name: model.name,
       fields: model.fields
-        .filter(f => !(f.relationName && isCreateType) && (isCreateType || !f.isId))
+        .filter(f => {
+          if (isCreateType) {
+            // Exclude relations and primary keys for createType
+            return !f.relationName && !f.isId
+          } else {
+            // Include all fields for entityType
+            return true
+          }
+        })
         .map(f => ({
           name: f.name,
           typeAnnotation: f.type,
-          required: f.isRequired,
+          required: f.isRequired && !(isCreateType && f.isId), // Ensure primary keys are not required in createType
           isArray: f.isList,
-          hasDefault: f.hasDefaultValue,
-          isPrimaryKey: f.isId
+          hasDefault: f.hasDefaultValue && !(isCreateType && f.isId), // Avoid default values for primary keys in createType
+          isPrimaryKey: !isCreateType && f.isId // Primary key only for entityType
         }))
     })
   })
