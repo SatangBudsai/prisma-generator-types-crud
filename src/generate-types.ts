@@ -41,20 +41,64 @@ export default async function generateTypes(
   useType: boolean = true
 ) {
   const dmmf = await getDMMF({ datamodelPath: schemaPath })
-  let typesEntity = distillDMMF(dmmf, false)
-  let typesCreate = distillDMMF(dmmf, true)
+  let typesEntity = distillDMMF(dmmf, false, false, false)
+  let typesCreate = distillDMMF(dmmf, true, false, false)
+  let typesUpdate = distillDMMF(dmmf, false, true, false)
+  let typesDelete = distillDMMF(dmmf, false, false, true)
   typesEntity = convertPrismaTypesToJSTypes(typesEntity, false)
   typesCreate = convertPrismaTypesToJSTypes(typesCreate, true)
+  typesUpdate = convertPrismaTypesToJSTypes(typesUpdate, false)
+  typesDelete = convertPrismaTypesToJSTypes(typesDelete, false)
 
-  await clearOutputPaths(outputPath, typesEntity.models, typesCreate.models)
+  await clearOutputPaths(outputPath, typesEntity.models, typesCreate.models, typesUpdate.models, typesDelete.models)
 
   for (const model of typesEntity.models) {
-    const entityTypeContent = createTypeFileContents(model, typesEntity.models, typesEntity.enums, useType, false)
+    const entityTypeContent = createTypeFileContents(
+      model,
+      typesEntity.models,
+      typesEntity.enums,
+      useType,
+      false,
+      false,
+      false
+    )
     await writeToFile(entityTypeContent, outputPath, model.name, 'entityType.ts', generateDeclarations)
   }
   for (const model of typesCreate.models) {
-    const createTypeContent = createTypeFileContents(model, typesCreate.models, typesCreate.enums, useType, true)
+    const createTypeContent = createTypeFileContents(
+      model,
+      typesCreate.models,
+      typesCreate.enums,
+      useType,
+      true,
+      false,
+      false
+    )
     await writeToFile(createTypeContent, outputPath, model.name, 'createType.ts', generateDeclarations)
+  }
+  for (const model of typesUpdate.models) {
+    const updateTypeContent = createTypeFileContents(
+      model,
+      typesUpdate.models,
+      typesUpdate.enums,
+      useType,
+      false,
+      true,
+      false
+    )
+    await writeToFile(updateTypeContent, outputPath, model.name, 'updateType.ts', generateDeclarations)
+  }
+  for (const model of typesDelete.models) {
+    const deleteTypeContent = createTypeFileContents(
+      model,
+      typesDelete.models,
+      typesDelete.enums,
+      useType,
+      false,
+      false,
+      true
+    )
+    await writeToFile(deleteTypeContent, outputPath, model.name, 'deleteType.ts', generateDeclarations)
   }
 
   for (const model of typesEntity.models) {
@@ -73,9 +117,22 @@ export default async function generateTypes(
   }
 }
 
-async function clearOutputPaths(outputPath: string, entityModels: Model[], createModels: Model[]) {
+async function clearOutputPaths(
+  outputPath: string,
+  entityModels: Model[],
+  createModels: Model[],
+  updateModels: Model[],
+  deleteModels: Model[]
+) {
   try {
-    const models = [...new Set([...entityModels.map(m => m.name), ...createModels.map(m => m.name)])]
+    const models = [
+      ...new Set([
+        ...entityModels.map(m => m.name),
+        ...createModels.map(m => m.name),
+        ...updateModels.map(m => m.name),
+        ...deleteModels.map(m => m.name)
+      ])
+    ]
     for (const modelName of models) {
       const modelPath = join(outputPath, modelName)
       await rm(modelPath, { recursive: true, force: true })
@@ -89,7 +146,12 @@ async function clearOutputPaths(outputPath: string, entityModels: Model[], creat
   }
 }
 
-function distillDMMF(dmmf: DMMF.Document, isCreateType: boolean): TypeTransfer {
+function distillDMMF(
+  dmmf: DMMF.Document,
+  isCreateType: boolean,
+  isUpdateType: boolean,
+  isDeleteType: boolean
+): TypeTransfer {
   const types: TypeTransfer = {
     models: [],
     enums: []
@@ -108,10 +170,12 @@ function distillDMMF(dmmf: DMMF.Document, isCreateType: boolean): TypeTransfer {
       fields: model.fields
         .filter(f => {
           if (isCreateType) {
-            // Exclude relations and primary keys for createType
             return !f.relationName && !f.isId
+          } else if (isUpdateType) {
+            return true
+          } else if (isDeleteType) {
+            return f.isId
           } else {
-            // Include all fields for entityType
             return true
           }
         })
@@ -121,7 +185,7 @@ function distillDMMF(dmmf: DMMF.Document, isCreateType: boolean): TypeTransfer {
           required: f.isRequired && !(isCreateType && f.isId), // Ensure primary keys are not required in createType
           isArray: f.isList,
           hasDefault: f.hasDefaultValue && !(isCreateType && f.isId), // Avoid default values for primary keys in createType
-          isPrimaryKey: !isCreateType && f.isId // Primary key only for entityType
+          isPrimaryKey: !isCreateType && f.isId // Primary key only for entityType and updateType
         }))
     })
   })
@@ -165,9 +229,17 @@ function createTypeFileContents(
   allModels: Model[],
   allEnums: Enum[],
   useType: boolean,
-  isCreateType: boolean
+  isCreateType: boolean,
+  isUpdateType: boolean,
+  isDeleteType: boolean
 ): string {
-  const typeNameSuffix = isCreateType ? 'CreateType' : 'EntityType'
+  const typeNameSuffix = isCreateType
+    ? 'CreateType'
+    : isUpdateType
+    ? 'UpdateType'
+    : isDeleteType
+    ? 'DeleteType'
+    : 'EntityType'
   const imports = createImportStatements(model, allModels, allEnums)
   const fileContents = `// AUTO GENERATED FILE BY prisma-typegen
 // DO NOT EDIT
@@ -175,7 +247,9 @@ function createTypeFileContents(
 ${imports}
 
 export ${useType ? 'type' : 'interface'} ${model.name}${typeNameSuffix} ${useType ? '= ' : ''}{
-${model.fields.map(field => createFieldLine(field, isCreateType, allModels, allEnums)).join('\n')}
+${model.fields
+  .map(field => createFieldLine(field, isCreateType, isUpdateType, isDeleteType, allModels, allEnums))
+  .join('\n')}
 }`
   return fileContents
 }
@@ -207,13 +281,20 @@ function createImportStatements(model: Model, allModels: Model[], allEnums: Enum
     .join('\n')
 
   const enumImports = uniqueEnumTypes
-    .map(enumName => `import { ${enumName} } from '../enum/${enumName}/${enumName}.ts'`)
+    .map(enumName => `import { ${enumName} } from '../enum/${enumName}/${enumName}'`)
     .join('\n')
 
   return `${modelImports}${modelImports && enumImports ? '\n' : ''}${enumImports}`
 }
 
-function createFieldLine(field: Field, isCreateType: boolean, allModels: Model[], allEnums: Enum[]): string {
+function createFieldLine(
+  field: Field,
+  isCreateType: boolean,
+  isUpdateType: boolean,
+  isDeleteType: boolean,
+  allModels: Model[],
+  allEnums: Enum[]
+): string {
   const typeSuffix = field.isArray ? '[]' : ''
   const nullability = field.required ? '' : ' | null'
   const optional = field.required && !field.hasDefault ? '' : '?'
@@ -226,6 +307,10 @@ function createFieldLine(field: Field, isCreateType: boolean, allModels: Model[]
     : isEnum
     ? `${field.typeAnnotation}`
     : field.typeAnnotation
+
+  if (isDeleteType) {
+    return `    ${field.name}: ${typeAnnotation},`
+  }
 
   return isCreateType
     ? `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},`
