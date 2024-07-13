@@ -82,34 +82,6 @@ enum Role {
 }
 ```
 
-### Generated `index.ts` (or `index.d.ts`)
-
-```typescript
-export enum Role {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-}
-
-export interface User {
-  id: number
-  createdAt: Date
-  email: string
-  name?: string
-  role: Role
-  posts: Post[]
-}
-
-export interface Post {
-  id: number,
-  createdAt: Date,
-  updatedAt: Date,
-  published: boolean,
-  title: string,
-  author?: User,
-  authorId?: number,
-}
-```
-
 ### Generated `enum/Role/index.ts` 
 
 ```typescript
