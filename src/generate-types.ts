@@ -34,12 +34,7 @@ interface Enum {
  * @param generateDeclarations Whether to just generate type declarations or to generate a full TypeScript file
  * @param useType Use type instead of interface
  */
-export default async function generateTypes(
-  schemaPath: string,
-  outputPath: string,
-  generateDeclarations: boolean = false,
-  useType: boolean = true
-) {
+export default async function generateTypes(schemaPath: string, outputPath: string, useType: boolean = true) {
   const dmmf = await getDMMF({ datamodelPath: schemaPath })
   let typesEntity = distillDMMF(dmmf, false, false, false)
   let typesCreate = distillDMMF(dmmf, true, false, false)
@@ -230,8 +225,8 @@ function createTypeFileContents(
     : isDeleteType
     ? 'DeleteType'
     : 'EntityType'
-  const imports = createImportStatements(model, allModels, allEnums, isUpdateType)
-  const fileContents = `// AUTO GENERATED FILE BY prisma-typegen
+  const imports = createImportStatements(model, allModels, allEnums)
+  const fileContents = `// AUTO GENERATED FILE BY prisma-generator-types-crud
 // DO NOT EDIT
 
 ${imports}
@@ -246,7 +241,7 @@ ${model.fields
 
 function createEnumFileContents(enumType: Enum): string {
   const enumValues = enumType.values.map(value => `  ${value} = "${value}"`).join(',\n')
-  return `// AUTO GENERATED FILE BY prisma-typegen
+  return `// AUTO GENERATED FILE BY prisma-generator-types-crud
 // DO NOT EDIT
 
 export enum ${enumType.name} {
@@ -254,9 +249,7 @@ ${enumValues}
 }`
 }
 
-function createImportStatements(model: Model, allModels: Model[], allEnums: Enum[], isUpdateType: boolean): string {
-  if (isUpdateType) return '' // Do not import related models for update types
-
+function createImportStatements(model: Model, allModels: Model[], allEnums: Enum[]): string {
   const relatedModels = model.fields
     .filter(field => allModels.some(m => m.name === field.typeAnnotation))
     .map(field => field.typeAnnotation)

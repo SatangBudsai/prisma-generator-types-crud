@@ -1,13 +1,13 @@
-# prisma-typegen
+# prisma-generator-types-crud
 
 Generates full types (including relations) for TypeScript from a Prisma schema
 
 # Usage
 
 ```sh-session
-$ npx prisma-typegen <output path> [prisma schema file] [--onlyDeclarations] [--generateInsertionTypes]
-$ npx prisma-typegen ./interfaces ./schema.prisma
-$ npx prisma-typegen ./interfaces/prismaTypes.ts ./schema.prisma
+$ npx prisma-generator-types-crud <output path> [prisma schema file] [--onlyDeclarations] [--generateInsertionTypes]
+$ npx prisma-generator-types-crud ./interfaces ./schema.prisma
+$ npx prisma-generator-types-crud ./interfaces/prismaTypes.ts ./schema.prisma
 ```
 
 ### Only output declarations
