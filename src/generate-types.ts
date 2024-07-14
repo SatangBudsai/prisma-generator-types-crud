@@ -1,6 +1,7 @@
 import prismaInternals from '@prisma/internals'
 import { mkdir, writeFile, rm } from 'fs/promises'
 import { join } from 'path'
+import glob from 'glob'
 import type { DMMF } from '@prisma/generator-helper'
 const { getDMMF } = prismaInternals
 
@@ -45,7 +46,7 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
   typesUpdate = convertPrismaTypesToJSTypes(typesUpdate, false)
   typesDelete = convertPrismaTypesToJSTypes(typesDelete, false)
 
-  await clearOutputPaths(outputPath, typesEntity.models, typesCreate.models, typesUpdate.models, typesDelete.models)
+  await clearOutputPaths(outputPath)
 
   for (const model of typesEntity.models) {
     const entityTypeContent = createTypeFileContents(
@@ -102,29 +103,20 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
   }
 }
 
-async function clearOutputPaths(
-  outputPath: string,
-  entityModels: Model[],
-  createModels: Model[],
-  updateModels: Model[],
-  deleteModels: Model[]
-) {
+async function clearOutputPaths(outputPath: string) {
   try {
-    const models = [
-      ...new Set([
-        ...entityModels.map(m => m.name),
-        ...createModels.map(m => m.name),
-        ...updateModels.map(m => m.name),
-        ...deleteModels.map(m => m.name)
-      ])
-    ]
-    for (const modelName of models) {
-      const modelPath = join(outputPath, 'types', modelName)
-      await rm(modelPath, { recursive: true, force: true })
-      await mkdir(modelPath, { recursive: true })
-    }
+    const typesPath = join(outputPath, 'types')
     const enumPath = join(outputPath, 'enum')
-    await rm(enumPath, { recursive: true, force: true })
+
+    // Remove all files under 'types' and 'enum'
+    const files = glob.sync(`${typesPath}/**/*.*`).concat(glob.sync(`${enumPath}/**/*.*`))
+
+    for (const file of files) {
+      await rm(file, { force: true })
+    }
+
+    // Ensure directories exist
+    await mkdir(typesPath, { recursive: true })
     await mkdir(enumPath, { recursive: true })
   } catch (error) {
     console.error(`Failed to clear output paths: ${error}`)

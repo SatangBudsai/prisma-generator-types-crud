@@ -6,5 +6,6 @@
   "jsxSingleQuote": true,
   "printWidth": 120,
   "arrowParens": "avoid",
-  "trailingComma": "none"
+  "trailingComma": "none",
+  "endOfLine": "lf"
 }
