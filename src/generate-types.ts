@@ -108,12 +108,9 @@ async function clearOutputPaths(outputPath: string) {
     const typesPath = join(outputPath, 'types')
     const enumPath = join(outputPath, 'enum')
 
-    // Remove all files under 'types' and 'enum'
-    const files = glob.sync(`${typesPath}/**/*.*`).concat(glob.sync(`${enumPath}/**/*.*`))
-
-    for (const file of files) {
-      await rm(file, { force: true })
-    }
+    // Remove the 'types' and 'enum' directories and their contents
+    await rm(typesPath, { recursive: true, force: true })
+    await rm(enumPath, { recursive: true, force: true })
 
     // Ensure directories exist
     await mkdir(typesPath, { recursive: true })
