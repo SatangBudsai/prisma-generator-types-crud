@@ -37,28 +37,20 @@ interface Enum {
  */
 export default async function generateTypes(schemaPath: string, outputPath: string, useType: boolean = true) {
   const dmmf = await getDMMF({ datamodelPath: schemaPath })
-  let typesEntity = distillDMMF(dmmf, false, false, false)
+  let types = distillDMMF(dmmf, false, false, false)
   let typesCreate = distillDMMF(dmmf, true, false, false)
   let typesUpdate = distillDMMF(dmmf, false, true, false)
   let typesDelete = distillDMMF(dmmf, false, false, true)
-  typesEntity = convertPrismaTypesToJSTypes(typesEntity, false)
+  types = convertPrismaTypesToJSTypes(types, false)
   typesCreate = convertPrismaTypesToJSTypes(typesCreate, true)
   typesUpdate = convertPrismaTypesToJSTypes(typesUpdate, false)
   typesDelete = convertPrismaTypesToJSTypes(typesDelete, false)
 
   await clearOutputPaths(outputPath)
 
-  for (const model of typesEntity.models) {
-    const entityTypeContent = createTypeFileContents(
-      model,
-      typesEntity.models,
-      typesEntity.enums,
-      useType,
-      false,
-      false,
-      false
-    )
-    await writeToFile(entityTypeContent, outputPath, model.name, 'entityType.ts', false)
+  for (const model of types.models) {
+    const typeContent = createTypeFileContents(model, types.models, types.enums, useType, false, false, false)
+    await writeToFile(typeContent, outputPath, model.name, 'type.ts', false)
   }
   for (const model of typesCreate.models) {
     const createTypeContent = createTypeFileContents(
@@ -97,7 +89,7 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
     await writeToFile(deleteTypeContent, outputPath, model.name, 'deleteType.ts', false)
   }
 
-  for (const enumType of typesEntity.enums) {
+  for (const enumType of types.enums) {
     const enumContent = createEnumFileContents(enumType)
     await writeToFile(enumContent, join(outputPath, 'enum'), enumType.name, `index.ts`, true)
   }
@@ -159,7 +151,7 @@ function distillDMMF(
           required: f.isRequired && !(isCreateType && f.isId), // Ensure primary keys are not required in createType
           isArray: f.isList,
           hasDefault: f.hasDefaultValue && !(isCreateType && f.isId), // Avoid default values for primary keys in createType
-          isPrimaryKey: !isCreateType && f.isId // Primary key only for entityType and updateType
+          isPrimaryKey: !isCreateType && f.isId // Primary key only for type and updateType
         }))
     })
   })
@@ -213,7 +205,7 @@ function createTypeFileContents(
     ? 'UpdateType'
     : isDeleteType
     ? 'DeleteType'
-    : 'EntityType'
+    : 'Type'
   const imports = createImportStatements(model, allModels, allEnums)
   const fileContents = `// AUTO GENERATED FILE BY prisma-generator-types-crud
 // DO NOT EDIT
@@ -251,7 +243,7 @@ function createImportStatements(model: Model, allModels: Model[], allEnums: Enum
   const uniqueEnumTypes = [...new Set(enumTypes)]
 
   const modelImports = uniqueRelatedModels
-    .map(modelName => `import { ${modelName}EntityType } from '../${modelName}/entityType'`)
+    .map(modelName => `import { ${modelName}Type } from '../${modelName}/type'`)
     .join('\n')
 
   const enumImports = uniqueEnumTypes.map(enumName => `import { ${enumName} } from '../../enum/${enumName}'`).join('\n')
@@ -275,7 +267,7 @@ function createFieldLine(
   const isRelation = allModels.some(model => model.name === field.typeAnnotation)
   const isEnum = allEnums.some(enumType => enumType.name === field.typeAnnotation)
   const typeAnnotation = isRelation
-    ? `${field.typeAnnotation}EntityType`
+    ? `${field.typeAnnotation}Type`
     : isEnum
     ? `${field.typeAnnotation}`
     : field.typeAnnotation
@@ -288,8 +280,11 @@ function createFieldLine(
     return `    ${field.name}${field.required ? '' : '?'}: ${typeAnnotation}${typeSuffix},`
   }
 
+  // Adjust required status for relation fields in create type
+  const adjustedRequiredStatus = isRelation ? false : field.required
+
   return isCreateType
-    ? `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},`
+    ? `    ${field.name}${adjustedRequiredStatus ? '' : '?'}: ${typeAnnotation}${typeSuffix}${nullability},`
     : `    ${field.name}${field.required ? '' : '?'}: ${typeAnnotation}${typeSuffix},`
 }
 
@@ -301,7 +296,31 @@ async function writeToFile(contents: string, outputPath: string, modelName: stri
     await writeFile(filePath, contents, {
       encoding: 'utf8'
     })
+
+    if (!isEnum) {
+      await writeIndexFile(directoryPath, modelName)
+    }
   } catch (e) {
     console.error(e)
+  }
+}
+
+async function writeIndexFile(directoryPath: string, modelName: string) {
+  const indexPath = join(directoryPath, 'index.ts')
+  const indexContent = `// AUTO GENERATED FILE BY prisma-generator-types-crud
+// DO NOT EDIT
+
+export * from './createType';
+export * from './updateType';
+export * from './deleteType';
+export * from './type';
+`
+
+  try {
+    await writeFile(indexPath, indexContent, {
+      encoding: 'utf8'
+    })
+  } catch (e) {
+    console.error(`Failed to write index file for model ${modelName}: ${e}`)
   }
 }
