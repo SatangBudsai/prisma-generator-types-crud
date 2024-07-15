@@ -1,7 +1,6 @@
 import prismaInternals from '@prisma/internals'
 import { mkdir, writeFile, rm } from 'fs/promises'
 import { join } from 'path'
-import glob from 'glob'
 import type { DMMF } from '@prisma/generator-helper'
 const { getDMMF } = prismaInternals
 
@@ -32,7 +31,6 @@ interface Enum {
 /**
  * @param schemaPath Path to Prisma schema file
  * @param outputPath Path to output directory
- * @param generateDeclarations Whether to just generate type declarations or to generate a full TypeScript file
  * @param useType Use type instead of interface
  */
 export default async function generateTypes(schemaPath: string, outputPath: string, useType: boolean = true) {
@@ -261,7 +259,6 @@ function createFieldLine(
 ): string {
   const typeSuffix = field.isArray ? '[]' : ''
   const nullability = field.required ? '' : ' | null'
-  const optional = field.required && !field.hasDefault ? '' : '?'
 
   // Check if the field type is a relation to another model
   const isRelation = allModels.some(model => model.name === field.typeAnnotation)
@@ -272,20 +269,20 @@ function createFieldLine(
     ? `${field.typeAnnotation}`
     : field.typeAnnotation
 
+  // Make all relation fields optional
+  const optional = isRelation ? '?' : field.required ? '' : '?'
+
   if (isDeleteType) {
-    return `    ${field.name}: ${typeAnnotation},`
+    return `    ${field.name}${optional}: ${typeAnnotation},`
   }
 
   if (isUpdateType) {
-    return `    ${field.name}${field.required ? '' : '?'}: ${typeAnnotation}${typeSuffix},`
+    return `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix},`
   }
 
-  // Adjust required status for relation fields in create type
-  const adjustedRequiredStatus = isRelation ? false : field.required
-
   return isCreateType
-    ? `    ${field.name}${adjustedRequiredStatus ? '' : '?'}: ${typeAnnotation}${typeSuffix}${nullability},`
-    : `    ${field.name}${field.required ? '' : '?'}: ${typeAnnotation}${typeSuffix},`
+    ? `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},`
+    : `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix},`
 }
 
 async function writeToFile(contents: string, outputPath: string, modelName: string, fileName: string, isEnum: boolean) {
