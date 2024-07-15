@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model conversation_member {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversation_id String?       @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id         String?       @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_time    DateTime      @default(now()) @db.Timestamptz(6)
+  update_time     DateTime?     @db.Timestamptz(6)
+  user            user?         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  app_id              String                @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_key            String
+  name                String?
+  profile             String?
+  created_time        DateTime?             @default(now()) @db.Timestamptz(6)
+  update_time         DateTime?             @db.Timestamptz(6)
+  conversation_member conversation_member[]
+  mst_app             application           @relation(fields: [app_id], references: [id], onDelete: Cascade)
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model application {
+  id             String           @id(map: "mst_app_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  domain         String?
+  name           String?
+  logo           String?
+  created_time   DateTime         @default(now()) @db.Timestamptz(6)
+  update_time    DateTime?        @db.Timestamptz(6)
+  user           user[]
+}
