@@ -2,17 +2,24 @@
 
 Generates full types (including relations) for TypeScript from a Prisma schema
 
+# Install
+
+```sh-session
+npm install -D prisma-generator-types-crud@latest
+  or
+yarn add -D prisma-generator-types-crud@latest
+```
+
 # Usage
 
 ```sh-session
-$ npx prisma-generator-types-crud <output path> <schema.prisma path> [--useType] [--prettier]
-
+npx prisma-generator-types-crud <output path> <schema.prisma path> [--useType] [--prettier]
 ```
 
-# Example Command Generate
+# Example Usage Generate
 
 ```sh-session
-$ npx prisma-generator-types-crud ./prisma/generated/ ./prisma/schema.prisma --useType --prettier
+npx prisma-generator-types-crud ./prisma/generated/ ./prisma/schema.prisma --useType --prettier
 ```
 
 ### Generate types for data to be inserted
