@@ -241,10 +241,10 @@ function createImportStatements(model: Model, allModels: Model[], allEnums: Enum
   const uniqueEnumTypes = [...new Set(enumTypes)]
 
   const modelImports = uniqueRelatedModels
-    .map(modelName => `import { ${modelName}Type } from '../${modelName}/type'`)
+    .map(modelName => `import { ${modelName}Type } from '../${modelName}/type';`)
     .join('\n')
 
-  const enumImports = uniqueEnumTypes.map(enumName => `import { ${enumName} } from '../../enum/${enumName}'`).join('\n')
+  const enumImports = uniqueEnumTypes.length > 0 ? `import { $Enums } from '@prisma/client';` : ''
 
   return `${modelImports}${modelImports && enumImports ? '\n' : ''}${enumImports}`
 }
@@ -260,16 +260,14 @@ function createFieldLine(
   const typeSuffix = field.isArray ? '[]' : ''
   const nullability = field.required ? '' : ' | null'
 
-  // Check if the field type is a relation to another model
   const isRelation = allModels.some(model => model.name === field.typeAnnotation)
   const isEnum = allEnums.some(enumType => enumType.name === field.typeAnnotation)
   const typeAnnotation = isRelation
     ? `${field.typeAnnotation}Type`
     : isEnum
-    ? `${field.typeAnnotation}`
+    ? `$Enums.${field.typeAnnotation}`
     : field.typeAnnotation
 
-  // Make all relation fields optional
   const optional = isRelation ? '?' : field.required ? '' : '?'
 
   if (isDeleteType) {
