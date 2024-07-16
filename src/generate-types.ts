@@ -86,25 +86,17 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
     )
     await writeToFile(deleteTypeContent, outputPath, model.name, 'deleteType.ts', false)
   }
-
-  for (const enumType of types.enums) {
-    const enumContent = createEnumFileContents(enumType)
-    await writeToFile(enumContent, join(outputPath, 'enum'), enumType.name, `index.ts`, true)
-  }
 }
 
 async function clearOutputPaths(outputPath: string) {
   try {
     const typesPath = join(outputPath, 'types')
-    const enumPath = join(outputPath, 'enum')
 
-    // Remove the 'types' and 'enum' directories and their contents
+    // Remove the 'types' directory and its contents
     await rm(typesPath, { recursive: true, force: true })
-    await rm(enumPath, { recursive: true, force: true })
 
-    // Ensure directories exist
+    // Ensure directory exists
     await mkdir(typesPath, { recursive: true })
-    await mkdir(enumPath, { recursive: true })
   } catch (error) {
     console.error(`Failed to clear output paths: ${error}`)
   }
@@ -285,16 +277,14 @@ function createFieldLine(
 
 async function writeToFile(contents: string, outputPath: string, modelName: string, fileName: string, isEnum: boolean) {
   try {
-    const directoryPath = isEnum ? join(outputPath, modelName) : join(outputPath, 'types', modelName)
+    const directoryPath = join(outputPath, 'types', modelName)
     await mkdir(directoryPath, { recursive: true })
     const filePath = join(directoryPath, fileName)
     await writeFile(filePath, contents, {
       encoding: 'utf8'
     })
 
-    if (!isEnum) {
-      await writeIndexFile(directoryPath, modelName)
-    }
+    await writeIndexFile(directoryPath, modelName)
   } catch (e) {
     console.error(e)
   }
