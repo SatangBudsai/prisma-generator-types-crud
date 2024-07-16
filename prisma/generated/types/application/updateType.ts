@@ -2,10 +2,10 @@
 // DO NOT EDIT
 
 export type applicationUpdateType = {
-  id?: string | null
+  id?: string
   domain?: string | null
   name?: string | null
   logo?: string | null
-  created_time?: Date | null
+  created_time?: Date
   update_time?: Date | null
 }
