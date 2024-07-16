@@ -3,9 +3,9 @@
 
 export type applicationUpdateType = {
   id: string
-  domain?: string
-  name?: string
-  logo?: string
+  domain?: string | null
+  name?: string | null
+  logo?: string | null
   created_time: Date
-  update_time?: Date
+  update_time?: Date | null
 }

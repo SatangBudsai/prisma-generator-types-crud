@@ -277,12 +277,12 @@ function createFieldLine(
   }
 
   if (isUpdateType) {
-    return `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix},`
+    return `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},`
   }
 
   return isCreateType
     ? `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},`
-    : `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix},`
+    : `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${optional ? ' | null' : ''},`
 }
 
 async function writeToFile(contents: string, outputPath: string, modelName: string, fileName: string, isEnum: boolean) {

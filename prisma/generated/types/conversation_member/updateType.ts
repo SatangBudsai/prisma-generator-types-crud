@@ -3,8 +3,8 @@
 
 export type conversation_memberUpdateType = {
   id: string
-  conversation_id?: string
-  user_id?: string
+  conversation_id?: string | null
+  user_id?: string | null
   created_time: Date
-  update_time?: Date
+  update_time?: Date | null
 }

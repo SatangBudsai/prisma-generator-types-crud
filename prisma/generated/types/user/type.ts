@@ -8,10 +8,10 @@ export type userType = {
   id: string
   app_id: string
   user_key: string
-  name?: string
-  profile?: string
-  created_time?: Date
-  update_time?: Date
-  conversation_member?: conversation_memberType[]
-  mst_app?: applicationType
+  name?: string | null
+  profile?: string | null
+  created_time?: Date | null
+  update_time?: Date | null
+  conversation_member?: conversation_memberType[] | null
+  mst_app?: applicationType | null
 }

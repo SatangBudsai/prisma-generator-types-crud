@@ -1,6 +1,6 @@
 {
   "name": "prisma-generator-types-crud",
-  "version": "1.2.9",
+  "version": "1.3.1",
   "description": "Generates full types (including relations) for TypeScript from a Prisma schema",
   "exports": "./lib/index.js",
   "type": "module",
@@ -10,7 +10,7 @@
     "build": "tsc && node convert-line-endings.js && chmod +x ./lib/index.js",
     "clean": "rm -rf ./lib",
     "pre:publish": "npm run clean && npm run build",
-    "pre:generated": "node lib/index.js ./prisma/generated/ ./prisma/schema.prisma --useType --prettier"
+    "pre:generate": "npm run clean && npm run build && node lib/index.js ./prisma/generated/ ./prisma/schema.prisma --useType --prettier"
   },
   "dependencies": {
     "@prisma/client": "^5.16.2",

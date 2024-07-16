@@ -5,8 +5,8 @@ export type userUpdateType = {
   id: string
   app_id: string
   user_key: string
-  name?: string
-  profile?: string
-  created_time?: Date
-  update_time?: Date
+  name?: string | null
+  profile?: string | null
+  created_time?: Date | null
+  update_time?: Date | null
 }

@@ -5,10 +5,10 @@ import { userType } from '../user/type'
 
 export type applicationType = {
   id: string
-  domain?: string
-  name?: string
-  logo?: string
+  domain?: string | null
+  name?: string | null
+  logo?: string | null
   created_time: Date
-  update_time?: Date
-  user?: userType[]
+  update_time?: Date | null
+  user?: userType[] | null
 }
