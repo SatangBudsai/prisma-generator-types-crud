@@ -46,6 +46,9 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
 
   await clearOutputPaths(outputPath)
 
+  // Create types.ts file
+  await createTypesFile(outputPath)
+
   for (const model of types.models) {
     const typeContent = createTypeFileContents(model, types.models, types.enums, useType, false, false, false)
     await writeToFile(typeContent, outputPath, model.name, 'type.ts', false)
@@ -157,7 +160,7 @@ function convertPrismaTypesToJSTypes(types: TypeTransfer, isCreateType: boolean)
     ['BigInt', 'number'],
     ['Float', 'number'],
     ['Decimal', 'number'],
-    ['Json', 'any'],
+    ['Json', 'JsonType'], // Change 'any' to 'JsonType'
     ['Bytes', 'Buffer']
   ])
   PrismaTypesMap.set('DateTime', isCreateType ? '(Date | string)' : 'Date')
@@ -196,7 +199,7 @@ function createTypeFileContents(
     : isDeleteType
     ? 'DeleteType'
     : 'Type'
-  const imports = createImportStatements(model, allModels, allEnums)
+  const imports = createImportStatements(model, allModels, allEnums, '../')
   const fileContents = `// AUTO GENERATED FILE BY prisma-generator-types-crud
 // DO NOT EDIT
 
@@ -220,7 +223,7 @@ ${enumValues}
 }`
 }
 
-function createImportStatements(model: Model, allModels: Model[], allEnums: Enum[]): string {
+function createImportStatements(model: Model, allModels: Model[], allEnums: Enum[], importPath: string): string {
   const relatedModels = model.fields
     .filter(field => allModels.some(m => m.name === field.typeAnnotation))
     .map(field => field.typeAnnotation)
@@ -233,12 +236,15 @@ function createImportStatements(model: Model, allModels: Model[], allEnums: Enum
   const uniqueEnumTypes = [...new Set(enumTypes)]
 
   const modelImports = uniqueRelatedModels
-    .map(modelName => `import { ${modelName}Type } from '../${modelName}/type';`)
+    .map(modelName => `import { ${modelName}Type } from '${importPath}${modelName}/type';`)
     .join('\n')
 
   const enumImports = uniqueEnumTypes.length > 0 ? `import { $Enums } from '@prisma/client';` : ''
+  const jsonImport = model.fields.some(field => field.typeAnnotation === 'JsonType')
+    ? `import { JsonType } from '${importPath}jsonTypes';`
+    : ''
 
-  return `${modelImports}${modelImports && enumImports ? '\n' : ''}${enumImports}`
+  return `${modelImports}${modelImports && enumImports ? '\n' : ''}${enumImports}${jsonImport ? `\n${jsonImport}` : ''}`
 }
 
 function createFieldLine(
@@ -309,5 +315,23 @@ export * from './type';
     })
   } catch (e) {
     console.error(`Failed to write index file for model ${modelName}: ${e}`)
+  }
+}
+
+async function createTypesFile(outputPath: string) {
+  const filePath = join(outputPath, 'types', 'jsonTypes.ts')
+  const contents = `// AUTO GENERATED FILE BY prisma-generator-types-crud
+// DO NOT EDIT
+
+export type JsonType = string | number | boolean | JsonObject | JsonArray | null;
+export interface JsonObject { [key: string]: JsonType; }
+export interface JsonArray extends Array<JsonType> {}
+`
+  try {
+    await writeFile(filePath, contents, {
+      encoding: 'utf8'
+    })
+  } catch (e) {
+    console.error(`Failed to write types.ts file: ${e}`)
   }
 }

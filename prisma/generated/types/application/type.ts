@@ -1,7 +1,8 @@
 // AUTO GENERATED FILE BY prisma-generator-types-crud
 // DO NOT EDIT
 
-import { userType } from '../user/type'
+import { conversationType } from '../conversation/type'
+import { external_usersType } from '../external_users/type'
 
 export type applicationType = {
   id: string | null
@@ -10,5 +11,6 @@ export type applicationType = {
   logo: string | null
   created_time: Date | null
   update_time: Date | null
-  user?: userType[] | null
+  conversation?: conversationType[] | null
+  external_users?: external_usersType[] | null
 }
