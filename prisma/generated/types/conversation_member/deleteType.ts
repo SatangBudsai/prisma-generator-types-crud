@@ -2,5 +2,5 @@
 // DO NOT EDIT
 
 export type conversation_memberDeleteType = {
-  id: string
+  id?: string
 }

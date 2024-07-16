@@ -28,7 +28,6 @@ If using this package to generate types that will be assigned to data to be inse
 
 - Prisma `DateTime` fields are mapped to `Date | string` insead of just `Date`. This is because most database clients support inserting date fields using either the native `Date` type or an ISO 8601 compliant `string`.
 - Fields marked with a `@default` value are made optional because they are populated automatically if not provided when inserting a new data row.
-- Relation fields (marked with `@relation`) are omitted because they do not exist at the database level and therefore can't be inserted. Read more about this [here](https://www.prisma.io/docs/concepts/components/prisma-schema/relations#relation-fields)
 
 ### Use `type` instead of `interface`
 

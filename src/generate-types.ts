@@ -250,7 +250,7 @@ function createFieldLine(
   allEnums: Enum[]
 ): string {
   const typeSuffix = field.isArray ? '[]' : ''
-  const nullability = field.required ? '' : ' | null'
+  const nullability = field.required && !field.hasDefault ? '' : ' | null'
 
   const isRelation = allModels.some(model => model.name === field.typeAnnotation)
   const isEnum = allEnums.some(enumType => enumType.name === field.typeAnnotation)
@@ -260,7 +260,7 @@ function createFieldLine(
     ? `$Enums.${field.typeAnnotation}`
     : field.typeAnnotation
 
-  const optional = isRelation ? '?' : field.required ? '' : '?'
+  const optional = isRelation ? '?' : field.required && !field.hasDefault ? '' : '?'
 
   if (isDeleteType) {
     return `    ${field.name}${optional}: ${typeAnnotation},`

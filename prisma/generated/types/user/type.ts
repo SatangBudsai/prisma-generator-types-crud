@@ -5,8 +5,8 @@ import { conversation_memberType } from '../conversation_member/type'
 import { applicationType } from '../application/type'
 
 export type userType = {
-  id: string
-  app_id: string
+  id: string | null
+  app_id: string | null
   user_key: string
   name: string | null
   profile: string | null

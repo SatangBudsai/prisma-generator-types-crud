@@ -4,10 +4,10 @@
 import { userType } from '../user/type'
 
 export type conversation_memberType = {
-  id: string
+  id: string | null
   conversation_id: string | null
   user_id: string | null
-  created_time: Date
+  created_time: Date | null
   update_time: Date | null
   user?: userType | null
 }

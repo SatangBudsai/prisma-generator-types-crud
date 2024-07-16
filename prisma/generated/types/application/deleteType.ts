@@ -2,5 +2,5 @@
 // DO NOT EDIT
 
 export type applicationDeleteType = {
-  id: string
+  id?: string
 }

@@ -4,11 +4,11 @@
 import { userType } from '../user/type'
 
 export type applicationType = {
-  id: string
+  id: string | null
   domain: string | null
   name: string | null
   logo: string | null
-  created_time: Date
+  created_time: Date | null
   update_time: Date | null
   user?: userType[] | null
 }

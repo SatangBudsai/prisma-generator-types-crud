@@ -2,5 +2,5 @@
 // DO NOT EDIT
 
 export type userDeleteType = {
-  id: string
+  id?: string
 }

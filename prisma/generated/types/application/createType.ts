@@ -5,6 +5,6 @@ export type applicationCreateType = {
   domain?: string | null
   name?: string | null
   logo?: string | null
-  created_time: Date | string
+  created_time?: (Date | string) | null
   update_time?: (Date | string) | null
 }

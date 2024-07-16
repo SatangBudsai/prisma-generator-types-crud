@@ -4,6 +4,6 @@
 export type conversation_memberCreateType = {
   conversation_id?: string | null
   user_id?: string | null
-  created_time: Date | string
+  created_time?: (Date | string) | null
   update_time?: (Date | string) | null
 }

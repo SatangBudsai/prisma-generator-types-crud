@@ -2,7 +2,7 @@
 // DO NOT EDIT
 
 export type userCreateType = {
-  app_id: string
+  app_id?: string | null
   user_key: string
   name?: string | null
   profile?: string | null

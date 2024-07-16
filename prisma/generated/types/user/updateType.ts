@@ -2,8 +2,8 @@
 // DO NOT EDIT
 
 export type userUpdateType = {
-  id: string
-  app_id: string
+  id?: string | null
+  app_id?: string | null
   user_key: string
   name?: string | null
   profile?: string | null

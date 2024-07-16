@@ -2,9 +2,9 @@
 // DO NOT EDIT
 
 export type conversation_memberUpdateType = {
-  id: string
+  id?: string | null
   conversation_id?: string | null
   user_id?: string | null
-  created_time: Date
+  created_time?: Date | null
   update_time?: Date | null
 }
