@@ -1,6 +1,6 @@
 {
   "name": "prisma-generator-types-crud",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "Generates full types (including relations) for TypeScript from a Prisma schema",
   "exports": "./lib/index.js",
   "type": "module",

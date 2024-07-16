@@ -10,5 +10,5 @@ export type applicationType = {
   logo: string | null
   created_time: Date
   update_time: Date | null
-  user: userType[] | null
+  user?: userType[] | null
 }

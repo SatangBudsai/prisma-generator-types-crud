@@ -12,6 +12,6 @@ export type userType = {
   profile: string | null
   created_time: Date | null
   update_time: Date | null
-  conversation_member: conversation_memberType[] | null
-  mst_app: applicationType | null
+  conversation_member?: conversation_memberType[] | null
+  mst_app?: applicationType | null
 }

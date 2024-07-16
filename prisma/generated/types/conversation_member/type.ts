@@ -9,5 +9,5 @@ export type conversation_memberType = {
   user_id: string | null
   created_time: Date
   update_time: Date | null
-  user: userType | null
+  user?: userType | null
 }
