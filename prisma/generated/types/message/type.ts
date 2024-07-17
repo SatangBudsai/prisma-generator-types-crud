@@ -2,16 +2,16 @@
 // DO NOT EDIT
 
 import { conversationType } from '../conversation/type'
-import { $Enums } from '@prisma/client'
-import { JsonType } from '../jsonTypes'
+import { massage_enum } from '@prisma/client'
+import { JsonValue } from '@prisma/client/runtime/library'
 
 export type messageType = {
   id: string | null
   sender_id: string
   conversation_id: string | null
-  type: $Enums.massage_enum | null
+  type: massage_enum | null
   message: string | null
-  user_read: JsonType | null
+  user_read: JsonValue | null
   created_time: Date | null
   update_time: Date | null
   conversation?: conversationType | null

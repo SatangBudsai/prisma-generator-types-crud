@@ -47,8 +47,6 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
   await clearOutputPaths(outputPath)
 
   // Create types.ts file
-  await createTypesFile(outputPath)
-
   for (const model of types.models) {
     const typeContent = createTypeFileContents(model, types.models, types.enums, useType, false, false, false)
     await writeToFile(typeContent, outputPath, model.name, 'type.ts', false)
@@ -160,7 +158,7 @@ function convertPrismaTypesToJSTypes(types: TypeTransfer, isCreateType: boolean)
     ['BigInt', 'number'],
     ['Float', 'number'],
     ['Decimal', 'number'],
-    ['Json', 'JsonType'], // Change 'any' to 'JsonType'
+    ['Json', 'JsonValue'], // Change to 'JsonValue'
     ['Bytes', 'Buffer']
   ])
   PrismaTypesMap.set('DateTime', isCreateType ? '(Date | string)' : 'Date')
@@ -210,6 +208,7 @@ ${model.fields
   .map(field => createFieldLine(field, isCreateType, isUpdateType, isDeleteType, allModels, allEnums))
   .join('\n')}
 }`
+
   return fileContents
 }
 
@@ -239,9 +238,10 @@ function createImportStatements(model: Model, allModels: Model[], allEnums: Enum
     .map(modelName => `import { ${modelName}Type } from '${importPath}${modelName}/type';`)
     .join('\n')
 
-  const enumImports = uniqueEnumTypes.length > 0 ? `import { $Enums } from '@prisma/client';` : ''
-  const jsonImport = model.fields.some(field => field.typeAnnotation === 'JsonType')
-    ? `import { JsonType } from '${importPath}jsonTypes';`
+  const enumImports = uniqueEnumTypes.map(enumName => `import { ${enumName} } from '@prisma/client';`).join('\n')
+
+  const jsonImport = model.fields.some(field => field.typeAnnotation === 'JsonValue')
+    ? `import { JsonValue } from '@prisma/client/runtime/library';`
     : ''
 
   return `${modelImports}${modelImports && enumImports ? '\n' : ''}${enumImports}${jsonImport ? `\n${jsonImport}` : ''}`
@@ -263,7 +263,7 @@ function createFieldLine(
   const typeAnnotation = isRelation
     ? `${field.typeAnnotation}Type`
     : isEnum
-    ? `$Enums.${field.typeAnnotation}`
+    ? `${field.typeAnnotation}`
     : field.typeAnnotation
 
   // Determine if the field should be optional
@@ -315,23 +315,5 @@ export * from './type';
     })
   } catch (e) {
     console.error(`Failed to write index file for model ${modelName}: ${e}`)
-  }
-}
-
-async function createTypesFile(outputPath: string) {
-  const filePath = join(outputPath, 'types', 'jsonTypes.ts')
-  const contents = `// AUTO GENERATED FILE BY prisma-generator-types-crud
-// DO NOT EDIT
-
-export type JsonType = string | number | boolean | JsonObject | JsonArray | null;
-export interface JsonObject { [key: string]: JsonType; }
-export interface JsonArray extends Array<JsonType> {}
-`
-  try {
-    await writeFile(filePath, contents, {
-      encoding: 'utf8'
-    })
-  } catch (e) {
-    console.error(`Failed to write types.ts file: ${e}`)
   }
 }
