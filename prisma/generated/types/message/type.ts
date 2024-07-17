@@ -11,7 +11,7 @@ export type messageType = {
   conversation_id: string | null
   type: massage_enum | null
   message: string | null
-  user_read: JsonValue | null
+  user_read: JsonValue | any | null
   created_time: Date | null
   update_time: Date | null
   conversation?: conversationType | null

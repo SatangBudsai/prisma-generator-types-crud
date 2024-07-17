@@ -158,7 +158,7 @@ function convertPrismaTypesToJSTypes(types: TypeTransfer, isCreateType: boolean)
     ['BigInt', 'number'],
     ['Float', 'number'],
     ['Decimal', 'number'],
-    ['Json', isCreateType ? 'JsonValue | any' : 'JsonValue | any'], // Change to 'JsonValue | any' for createType and updateType
+    ['Json', isCreateType ? 'JsonValue | any' : 'JsonValue | any'],
     ['Bytes', 'Buffer']
   ])
   PrismaTypesMap.set('DateTime', isCreateType ? '(Date | string)' : 'Date')
@@ -240,7 +240,7 @@ function createImportStatements(model: Model, allModels: Model[], allEnums: Enum
 
   const enumImports = uniqueEnumTypes.map(enumName => `import { ${enumName} } from '@prisma/client';`).join('\n')
 
-  const jsonImport = model.fields.some(field => field.typeAnnotation === 'JsonValue')
+  const jsonImport = model.fields.some(field => field.typeAnnotation === 'JsonValue | any')
     ? `import { JsonValue } from '@prisma/client/runtime/library';`
     : ''
 

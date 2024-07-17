@@ -9,7 +9,7 @@ export type messageCreateType = {
   conversation_id?: string
   type?: massage_enum | null
   message?: string | null
-  user_read?: JsonValue | null
+  user_read?: JsonValue | any | null
   created_time?: Date | string
   update_time?: (Date | string) | null
 }

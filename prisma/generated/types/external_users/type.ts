@@ -9,7 +9,7 @@ export type external_usersType = {
   id: string | null
   app_id: string | null
   url: string | null
-  headers: JsonValue | null
+  headers: JsonValue | any | null
   type_user_enum: type_user_enum | null
   created_time: Date | null
   update_time: Date | null

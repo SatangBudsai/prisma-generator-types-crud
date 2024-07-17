@@ -8,7 +8,7 @@ export type external_usersUpdateType = {
   id?: string
   app_id?: string
   url?: string | null
-  headers?: JsonValue | null
+  headers?: JsonValue | any | null
   type_user_enum?: type_user_enum | null
   created_time?: Date
   update_time?: Date | null
