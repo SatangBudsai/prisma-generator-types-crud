@@ -158,7 +158,7 @@ function convertPrismaTypesToJSTypes(types: TypeTransfer, isCreateType: boolean)
     ['BigInt', 'number'],
     ['Float', 'number'],
     ['Decimal', 'number'],
-    ['Json', 'JsonValue'], // Change to 'JsonValue'
+    ['Json', isCreateType ? 'JsonValue | any' : 'JsonValue | any'], // Change to 'JsonValue | any' for createType and updateType
     ['Bytes', 'Buffer']
   ])
   PrismaTypesMap.set('DateTime', isCreateType ? '(Date | string)' : 'Date')
