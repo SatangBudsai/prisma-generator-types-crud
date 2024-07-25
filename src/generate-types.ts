@@ -375,6 +375,10 @@ function createFieldLine(
     return `    ${field.name}${isRelation ? optional : ''}: ${typeAnnotation}${typeSuffix}${optional ? ' | null' : ''},`
   }
 
+  if (isCreateType) {
+    return !isRelation ? `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},` : ''
+  }
+
   return !isRelation ? `    ${field.name}: ${typeAnnotation}${typeSuffix} | null,` : ''
 }
 

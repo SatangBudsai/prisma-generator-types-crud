@@ -4,7 +4,7 @@
 import { conversation_enum } from '@prisma/client'
 
 export type conversationCreateType = {
-  app_id: string
+  app_id: string | null
   type: conversation_enum | null
   name: string | null
   profile: string | null
