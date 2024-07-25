@@ -5,11 +5,11 @@ import { type_user_enum } from '@prisma/client'
 import { JsonValue } from '@prisma/client/runtime/library'
 
 export type external_usersType = {
-  id?: string
-  app_id?: string
-  url?: string | null
-  headers?: JsonValue | any | null
-  type_user_enum?: type_user_enum | null
-  created_time?: Date
-  update_time?: Date | null
+  id: string
+  app_id: string
+  url: string | null
+  headers: JsonValue | any | null
+  type_user_enum: type_user_enum | null
+  created_time: Date
+  update_time: Date | null
 }

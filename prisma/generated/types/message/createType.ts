@@ -7,7 +7,7 @@ import { JsonValue } from '@prisma/client/runtime/library'
 export type messageCreateType = {
   sender_id?: string
   conversation_id: string
-  type?: massage_enum | null
-  message?: string | null
-  user_read?: JsonValue | any | null
+  type: massage_enum | null
+  message: string | null
+  user_read: JsonValue | any | null
 }

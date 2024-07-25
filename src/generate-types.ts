@@ -375,7 +375,7 @@ function createFieldLine(
     return `    ${field.name}${isRelation ? optional : ''}: ${typeAnnotation}${typeSuffix}${optional ? ' | null' : ''},`
   }
 
-  return !isRelation ? `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},` : ''
+  return !isRelation ? `    ${field.name}: ${typeAnnotation}${typeSuffix}${nullability},` : ''
 }
 
 async function writeToFile(contents: string, outputPath: string, modelName: string, fileName: string, isEnum: boolean) {
