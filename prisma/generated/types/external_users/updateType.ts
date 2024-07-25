@@ -10,6 +10,4 @@ export type external_usersUpdateType = {
   url?: string | null
   headers?: JsonValue | any | null
   type_user_enum?: type_user_enum | null
-  created_time?: Date
-  update_time?: Date | null
 }

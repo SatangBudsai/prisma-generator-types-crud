@@ -6,6 +6,4 @@ export type applicationUpdateType = {
   domain?: string | null
   name?: string | null
   logo?: string | null
-  created_time?: Date
-  update_time?: Date | null
 }
