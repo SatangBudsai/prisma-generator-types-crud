@@ -17,6 +17,7 @@ model conversation {
   update_time         DateTime?             @db.Timestamptz(6)
   name                String?
   profile             String?
+  send_message_time   DateTime?             @db.Timestamptz(6)
   mst_app             application           @relation(fields: [app_id], references: [id], onDelete: Cascade)
   conversation_member conversation_member[]
   message             message[]

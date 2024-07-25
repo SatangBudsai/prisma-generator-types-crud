@@ -1,5 +1,5 @@
 import prismaInternals from '@prisma/internals'
-import { mkdir, writeFile, rm } from 'fs/promises'
+import { mkdir, writeFile, rm, readFile } from 'fs/promises'
 import { join } from 'path'
 import type { DMMF } from '@prisma/generator-helper'
 const { getDMMF } = prismaInternals
@@ -28,12 +28,25 @@ interface Enum {
   values: string[]
 }
 
+interface ModelRules {
+  model: 'all' | string
+  key: string
+  file: 'CreateType' | 'UpdateType' | 'DeleteType' | 'Type' | 'TypeRelation'
+  action: 'hidden' | 'require' | 'optional'
+}
+
 /**
  * @param schemaPath Path to Prisma schema file
  * @param outputPath Path to output directory
  * @param useType Use type instead of interface
+ * @param modelRules Exclusion rules from JSON configuration
  */
-export default async function generateTypes(schemaPath: string, outputPath: string, useType: boolean = true) {
+export default async function generateTypes(
+  schemaPath: string,
+  outputPath: string,
+  useType: boolean = true,
+  modelRules: ModelRules[] = []
+) {
   const dmmf = await getDMMF({ datamodelPath: schemaPath })
   let types = distillDMMF(dmmf, false, false, false)
   let typesCreate = distillDMMF(dmmf, true, false, false)
@@ -48,7 +61,17 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
 
   // Create types.ts and typesRelation.ts files
   for (const model of types.models) {
-    const typeContent = createTypeFileContents(model, types.models, types.enums, useType, false, false, false, false)
+    const typeContent = createTypeFileContents(
+      model,
+      types.models,
+      types.enums,
+      useType,
+      false,
+      false,
+      false,
+      false,
+      modelRules
+    )
     await writeToFile(typeContent, outputPath, model.name, 'type.ts', false)
     const typeRelationContent = createTypeFileContents(
       model,
@@ -58,7 +81,8 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
       false,
       false,
       false,
-      true
+      true,
+      modelRules
     )
     await writeToFile(typeRelationContent, outputPath, model.name, 'typeRelation.ts', false)
   }
@@ -71,7 +95,8 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
       true,
       false,
       false,
-      false
+      false,
+      modelRules
     )
     await writeToFile(createTypeContent, outputPath, model.name, 'createType.ts', false)
   }
@@ -84,7 +109,8 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
       false,
       true,
       false,
-      false
+      false,
+      modelRules
     )
     await writeToFile(updateTypeContent, outputPath, model.name, 'updateType.ts', false)
   }
@@ -97,7 +123,8 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
       false,
       false,
       true,
-      false
+      false,
+      modelRules
     )
     await writeToFile(deleteTypeContent, outputPath, model.name, 'deleteType.ts', false)
   }
@@ -203,7 +230,8 @@ function createTypeFileContents(
   isCreateType: boolean,
   isUpdateType: boolean,
   isDeleteType: boolean,
-  includeRelations: boolean
+  includeRelations: boolean,
+  modelRules: ModelRules[]
 ): string {
   const typeNameSuffix = isCreateType
     ? 'CreateType'
@@ -215,6 +243,12 @@ function createTypeFileContents(
     ? 'TypeRelation'
     : 'Type'
   const imports = createImportStatements(model, allModels, allEnums, '../', includeRelations)
+
+  const fieldsToModelRules = modelRules
+    .filter(rule => rule.model === 'all' || rule.model === model.name)
+    .filter(rule => rule.file === typeNameSuffix && rule.action === 'hidden')
+    .map(rule => rule.key)
+
   const fileContents = `// AUTO GENERATED FILE BY prisma-generator-types-crud
 // DO NOT EDIT
 
@@ -222,7 +256,21 @@ ${imports}
 
 export ${useType ? 'type' : 'interface'} ${model.name}${typeNameSuffix} ${useType ? '= ' : ''}{
 ${model.fields
-  .map(field => createFieldLine(field, isCreateType, isUpdateType, isDeleteType, allModels, allEnums, includeRelations))
+  .filter(field => !fieldsToModelRules.includes(field.name))
+  .map(field =>
+    createFieldLine(
+      field,
+      isCreateType,
+      isUpdateType,
+      isDeleteType,
+      allModels,
+      allEnums,
+      includeRelations,
+      modelRules,
+      model.name,
+      typeNameSuffix
+    )
+  )
   .join('\n')}
 }`
 
@@ -279,7 +327,10 @@ function createFieldLine(
   isDeleteType: boolean,
   allModels: Model[],
   allEnums: Enum[],
-  includeRelations: boolean
+  includeRelations: boolean,
+  modelRules: ModelRules[],
+  modelName: string,
+  typeNameSuffix: string
 ): string {
   const typeSuffix = field.isArray ? '[]' : ''
   const nullability = field.hasDefault ? '' : field.required ? '' : ' | null'
@@ -294,7 +345,23 @@ function createFieldLine(
 
   // Determine if the field should be optional
   const optional = isRelation ? '?' : !field.required || field.hasDefault ? '?' : ''
-  // Determine if the field should allow null values
+
+  // Apply actions from modelRules
+  const fieldRule = modelRules.find(
+    rule =>
+      (rule.model === 'all' || rule.model === modelName) && rule.key === field.name && rule.file === typeNameSuffix
+  )
+  if (fieldRule) {
+    if (fieldRule.action === 'hidden') {
+      return ''
+    }
+    if (fieldRule.action === 'require') {
+      return `    ${field.name}: ${typeAnnotation}${typeSuffix},`
+    }
+    if (fieldRule.action === 'optional') {
+      return `    ${field.name}?: ${typeAnnotation}${typeSuffix}${nullability},`
+    }
+  }
 
   if (isDeleteType) {
     return `    ${field.name}${optional}: ${typeAnnotation},`

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import generateTypes from './generate-types.js'
-import { access } from 'fs/promises'
+import { access, readFile } from 'fs/promises'
 import { constants } from 'fs'
 import { exit } from 'process'
 import { exec } from 'child_process'
@@ -14,19 +14,21 @@ if (argv.length < 1) {
 }
 
 if (argv[0] === 'help' || argv[0] === '--help') {
-  console.log(`prisma-generator-types-crud
+  console.log(`
+  prisma-generator-types-crud
   Usage: <output path> [prisma schema file]
 
   Options:
     --useType                   Use type instead of interface
     --prettier                  Format the generated files with Prettier
+    --modelRules <path>      Path to JSON configuration file with exclusion rules
   `)
   exit(0)
 }
 
 const outputPath = argv[0]
 
-let schemaLocation: string
+let schemaLocation
 if (argv.length < 2 || argv[1].startsWith('--')) {
   console.log('Looking for schema.prisma')
   try {
@@ -47,10 +49,27 @@ if (argv.length < 2 || argv[1].startsWith('--')) {
 
 const useType = argv.includes('--useType')
 const prettier = argv.includes('--prettier')
+const modelRulesIndex = argv.indexOf('--modelRules')
+let modelRulesPath = null
+let modelRules = []
+
+if (modelRulesIndex !== -1 && modelRulesIndex + 1 < argv.length) {
+  modelRulesPath = argv[modelRulesIndex + 1]
+}
+
+if (modelRulesPath) {
+  try {
+    const modelRulesContent = await readFile(modelRulesPath, 'utf-8')
+    modelRules = JSON.parse(modelRulesContent)
+  } catch (e) {
+    console.error('Failed to read modelRules file:', e)
+    exit(1)
+  }
+}
 
 try {
   console.log('Generating types...')
-  await generateTypes(schemaLocation, outputPath, useType)
+  await generateTypes(schemaLocation, outputPath, useType, modelRules)
   console.log('Done!')
 
   if (prettier) {

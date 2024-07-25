@@ -10,4 +10,5 @@ export type conversationCreateType = {
   update_time?: (Date | string) | null
   name?: string | null
   profile?: string | null
+  send_message_time?: (Date | string) | null
 }

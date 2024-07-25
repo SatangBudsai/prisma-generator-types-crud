@@ -10,7 +10,7 @@
     "build": "tsc && node convert-line-endings.js && chmod +x ./lib/index.js",
     "clean": "rm -rf ./lib",
     "pre:publish": "npm run clean && npm run build",
-    "pre:generate": "npm run clean && npm run build && node lib/index.js ./prisma/generated/ ./prisma/schema.prisma --useType --prettier"
+    "pre:generate": "npm run clean && npm run build && node lib/index.js ./prisma/generated/ ./prisma/schema.prisma --useType --prettier --excludeConfig ./prisma/generated-config.json"
   },
   "dependencies": {
     "@prisma/client": "^5.16.2",

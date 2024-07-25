@@ -14,6 +14,7 @@ export type conversationTypeRelation = {
   update_time: Date | null
   name: string | null
   profile: string | null
+  send_message_time: Date | null
   mst_app?: applicationType | null
   conversation_member?: conversation_memberType[] | null
   message?: messageType[] | null
