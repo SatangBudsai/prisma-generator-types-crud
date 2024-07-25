@@ -3,5 +3,6 @@
   { "model": "all", "file": "CreateType", "key": "update_time", "action": "hidden" },
   { "model": "all", "file": "UpdateType", "key": "created_time", "action": "hidden" },
   { "model": "all", "file": "UpdateType", "key": "update_time", "action": "hidden" },
-  { "model": "message", "file": "CreateType", "key": "sender_id", "action": "optional" }
+  { "model": "message", "file": "CreateType", "key": "sender_id", "action": "optional" },
+  { "model": "message", "file": "CreateType", "key": "conversation_id", "action": "require" }
 ]
