@@ -46,10 +46,21 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
 
   await clearOutputPaths(outputPath)
 
-  // Create types.ts file
+  // Create types.ts and typesRelation.ts files
   for (const model of types.models) {
-    const typeContent = createTypeFileContents(model, types.models, types.enums, useType, false, false, false)
+    const typeContent = createTypeFileContents(model, types.models, types.enums, useType, false, false, false, false)
     await writeToFile(typeContent, outputPath, model.name, 'type.ts', false)
+    const typeRelationContent = createTypeFileContents(
+      model,
+      types.models,
+      types.enums,
+      useType,
+      false,
+      false,
+      false,
+      true
+    )
+    await writeToFile(typeRelationContent, outputPath, model.name, 'typeRelation.ts', false)
   }
   for (const model of typesCreate.models) {
     const createTypeContent = createTypeFileContents(
@@ -58,6 +69,7 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
       typesCreate.enums,
       useType,
       true,
+      false,
       false,
       false
     )
@@ -71,6 +83,7 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
       useType,
       false,
       true,
+      false,
       false
     )
     await writeToFile(updateTypeContent, outputPath, model.name, 'updateType.ts', false)
@@ -83,7 +96,8 @@ export default async function generateTypes(schemaPath: string, outputPath: stri
       useType,
       false,
       false,
-      true
+      true,
+      false
     )
     await writeToFile(deleteTypeContent, outputPath, model.name, 'deleteType.ts', false)
   }
@@ -188,7 +202,8 @@ function createTypeFileContents(
   useType: boolean,
   isCreateType: boolean,
   isUpdateType: boolean,
-  isDeleteType: boolean
+  isDeleteType: boolean,
+  includeRelations: boolean
 ): string {
   const typeNameSuffix = isCreateType
     ? 'CreateType'
@@ -196,8 +211,10 @@ function createTypeFileContents(
     ? 'UpdateType'
     : isDeleteType
     ? 'DeleteType'
+    : includeRelations
+    ? 'TypeRelation'
     : 'Type'
-  const imports = createImportStatements(model, allModels, allEnums, '../')
+  const imports = createImportStatements(model, allModels, allEnums, '../', includeRelations)
   const fileContents = `// AUTO GENERATED FILE BY prisma-generator-types-crud
 // DO NOT EDIT
 
@@ -205,7 +222,7 @@ ${imports}
 
 export ${useType ? 'type' : 'interface'} ${model.name}${typeNameSuffix} ${useType ? '= ' : ''}{
 ${model.fields
-  .map(field => createFieldLine(field, isCreateType, isUpdateType, isDeleteType, allModels, allEnums))
+  .map(field => createFieldLine(field, isCreateType, isUpdateType, isDeleteType, allModels, allEnums, includeRelations))
   .join('\n')}
 }`
 
@@ -222,10 +239,18 @@ ${enumValues}
 }`
 }
 
-function createImportStatements(model: Model, allModels: Model[], allEnums: Enum[], importPath: string): string {
-  const relatedModels = model.fields
-    .filter(field => allModels.some(m => m.name === field.typeAnnotation))
-    .map(field => field.typeAnnotation)
+function createImportStatements(
+  model: Model,
+  allModels: Model[],
+  allEnums: Enum[],
+  importPath: string,
+  includeRelations: boolean
+): string {
+  const relatedModels = includeRelations
+    ? model.fields
+        .filter(field => allModels.some(m => m.name === field.typeAnnotation))
+        .map(field => field.typeAnnotation)
+    : []
 
   const enumTypes = model.fields
     .filter(field => allEnums.some(e => e.name === field.typeAnnotation))
@@ -253,7 +278,8 @@ function createFieldLine(
   isUpdateType: boolean,
   isDeleteType: boolean,
   allModels: Model[],
-  allEnums: Enum[]
+  allEnums: Enum[],
+  includeRelations: boolean
 ): string {
   const typeSuffix = field.isArray ? '[]' : ''
   const nullability = field.hasDefault ? '' : field.required ? '' : ' | null'
@@ -278,9 +304,11 @@ function createFieldLine(
     return `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},`
   }
 
-  return isCreateType
-    ? `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},`
-    : `    ${field.name}${isRelation ? optional : ''}: ${typeAnnotation}${typeSuffix}${optional ? ' | null' : ''},`
+  if (includeRelations) {
+    return `    ${field.name}${isRelation ? optional : ''}: ${typeAnnotation}${typeSuffix}${optional ? ' | null' : ''},`
+  }
+
+  return !isRelation ? `    ${field.name}${optional}: ${typeAnnotation}${typeSuffix}${nullability},` : ''
 }
 
 async function writeToFile(contents: string, outputPath: string, modelName: string, fileName: string, isEnum: boolean) {
@@ -307,6 +335,7 @@ export * from './createType';
 export * from './updateType';
 export * from './deleteType';
 export * from './type';
+export * from './typeRelation';
 `
 
   try {
