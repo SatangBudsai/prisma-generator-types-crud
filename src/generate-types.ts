@@ -308,7 +308,7 @@ function createImportStatements(
   const uniqueEnumTypes = [...new Set(enumTypes)]
 
   const modelImports = uniqueRelatedModels
-    .map(modelName => `import { ${modelName}Type } from '${importPath}${modelName}/type';`)
+    .map(modelName => `import { ${modelName}TypeRelation } from '${importPath}${modelName}/typeRelation';`)
     .join('\n')
 
   const enumImports = uniqueEnumTypes.map(enumName => `import { ${enumName} } from '@prisma/client';`).join('\n')
@@ -338,7 +338,7 @@ function createFieldLine(
   const isRelation = allModels.some(model => model.name === field.typeAnnotation)
   const isEnum = allEnums.some(enumType => enumType.name === field.typeAnnotation)
   const typeAnnotation = isRelation
-    ? `${field.typeAnnotation}Type`
+    ? `${field.typeAnnotation}TypeRelation`
     : isEnum
     ? `${field.typeAnnotation}`
     : field.typeAnnotation

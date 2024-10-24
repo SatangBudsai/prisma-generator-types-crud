@@ -7,84 +7,299 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model conversation {
-  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  app_id              String                @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  type                conversation_enum?
-  created_time        DateTime              @default(now()) @db.Timestamptz(6)
-  update_time         DateTime?             @db.Timestamptz(6)
-  name                String?
-  profile             String?
-  send_message_time   DateTime?             @db.Timestamptz(6)
-  mst_app             application           @relation(fields: [app_id], references: [id], onDelete: Cascade)
-  conversation_member conversation_member[]
-  message             message[]
+model user {
+  id                    String                @id(map: "user_pk") @db.Uuid
+  identification_number String                @unique @db.VarChar(255)
+  first_name            String                @db.VarChar(255)
+  middle_name           String?               @db.VarChar(255)
+  last_name             String                @db.VarChar(255)
+  email                 String                @unique @db.VarChar(255)
+  phone_number          String                @unique(map: "user_mobilePhone_key") @db.VarChar(255)
+  date_of_birth         DateTime?             @db.Date
+  profile_image         String?               @db.VarChar(255)
+  created_at            DateTime?             @default(now())
+  updated_at            DateTime?             @updatedAt
+  country_id            String?               @db.Uuid
+  tbl_payments          tbl_payments[]
+  mst_country           mst_country?          @relation(fields: [country_id], references: [id])
+  user_wallet           user_wallet?
+  user_wallet_website   user_wallet_website[]
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model conversation_member {
-  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  conversation_id String?       @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id         String?       @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  created_time    DateTime      @default(now()) @db.Timestamptz(6)
-  update_time     DateTime?     @db.Timestamptz(6)
-  conversation    conversation? @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+model mst_country {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  country_name_th String?   @db.VarChar(255)
+  country_name_en String?   @db.VarChar(255)
+  short_name      String?   @db.VarChar(255)
+  created_at      DateTime? @default(now())
+  updated_at      DateTime? @updatedAt
+  user            user[]
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model message {
-  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sender_id       String
-  conversation_id String        @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  type            massage_enum?
-  message         String?
-  user_read       Json?
-  created_time    DateTime      @default(now()) @db.Timestamptz(6)
-  update_time     DateTime?     @db.Timestamptz(6)
-  conversation    conversation  @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+model mst_bank {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code          String?       @db.VarChar(255)
+  name_en       String?       @db.VarChar(255)
+  name_th       String?       @db.VarChar(255)
+  profile_image String?       @db.VarChar(255)
+  created_at    DateTime?     @default(now())
+  updated_at    DateTime?     @updatedAt
+  short_name    String?       @db.VarChar
+  user_wallet   user_wallet[]
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model application {
-  id             String           @id(map: "mst_app_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  domain         String?
-  name           String?
-  logo           String?
-  created_time   DateTime         @default(now()) @db.Timestamptz(6)
-  update_time    DateTime?        @db.Timestamptz(6)
-  conversation   conversation[]
-  external_users external_users[]
+model user_wallet {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bank_id          String?   @db.Uuid
+  account_number   String?   @db.VarChar(255)
+  account_name     String?   @db.VarChar(255)
+  wallet_address   String    @unique @db.VarChar(255)
+  balance          Float     @default(0.00)
+  created_at       DateTime? @default(now())
+  updated_at       DateTime? @updatedAt
+  user_id          String    @unique @db.Uuid
+  is_fristwithdraw Boolean?  @default(false)
+  stakerefund      Float?    @default(0.00)
+  mst_bank         mst_bank? @relation(fields: [bank_id], references: [id])
+  user             user      @relation(fields: [user_id], references: [id])
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model external_users {
-  id             String          @id(map: "api_external_find_many_users_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  app_id         String?         @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  url            String?
-  headers        Json?
-  type_user_enum type_user_enum?
-  created_time   DateTime        @default(now()) @db.Timestamptz(6)
-  update_time    DateTime?       @db.Timestamptz(6)
-  application    application?    @relation(fields: [app_id], references: [id], onDelete: Cascade, map: "api_external_find_many_users_app_id_fkey")
+model user_wallet_website {
+  id                              String                            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_website_id              String                            @db.Uuid
+  wallet_address                  String                            @unique @db.VarChar(255)
+  balance                         Float                             @default(0.00)
+  created_at                      DateTime?                         @default(now())
+  updated_at                      DateTime?                         @updatedAt
+  user_id                         String                            @db.Uuid
+  transaction_user_wallet_website transaction_user_wallet_website[]
+  company_website                 company_website                   @relation(fields: [company_website_id], references: [id], onDelete: SetNull)
+  user                            user                              @relation(fields: [user_id], references: [id])
 }
 
-enum conversation_enum {
-  group
-  singer
+model company {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String            @db.VarChar(255)
+  company_number  String            @db.VarChar(255)
+  created_at      DateTime?         @default(now())
+  updated_at      DateTime?         @updatedAt
+  email           String            @unique(map: "company_unique") @db.VarChar
+  company_website company_website[]
+  wallet_company  wallet_company?
 }
 
-enum massage_enum {
-  text
-  image
+model wallet_company {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id     String    @unique @db.Uuid
+  wallet_address String    @unique @db.VarChar(255)
+  balance        Float?    @default(0.00)
+  created_at     DateTime? @default(now())
+  updated_at     DateTime? @updatedAt
+  company        company   @relation(fields: [company_id], references: [id])
 }
 
-enum type_user_enum {
-  string
-  int
+model company_website {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id               String                     @db.Uuid
+  url_website              String?                    @db.VarChar(255)
+  name_th                  String?                    @db.VarChar(255)
+  name_en                  String?                    @db.VarChar(255)
+  short_description        String?                    @db.VarChar(255)
+  created_at               DateTime?                  @default(now())
+  updated_at               DateTime?                  @updatedAt
+  is_active                Boolean                    @default(false)
+  status                   status_enum                @default(draft)
+  img_website              String?                    @db.VarChar
+  header                   Json?
+  is_delete                Boolean                    @default(false)
+  description              String?                    @db.VarChar
+  company                  company                    @relation(fields: [company_id], references: [id])
+  company_website_endpoint company_website_endpoint[]
+  componay_website_images  componay_website_images[]
+  promote_company_website  promote_company_website[]
+  user_sandbox             user_sandbox[]
+  user_wallet_website      user_wallet_website[]
+}
+
+model company_website_endpoint {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_website_id String            @db.Uuid
+  endpoint_type_code String            @db.VarChar
+  url_endpoint       String            @db.VarChar(255)
+  created_at         DateTime?         @default(now())
+  updated_at         DateTime?         @updatedAt
+  company_website    company_website   @relation(fields: [company_website_id], references: [id], onDelete: Cascade)
+  mst_endpoint_type  mst_endpoint_type @relation(fields: [endpoint_type_code], references: [code], onDelete: NoAction, map: "company_website_endpoint_mst_endpoint_type_fk")
+}
+
+model mst_endpoint_type {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                     String                     @db.VarChar(255)
+  created_at               DateTime?                  @default(now())
+  updated_at               DateTime?                  @updatedAt
+  code                     String                     @unique(map: "mst_endpoint_type_unique") @db.VarChar
+  company_website_endpoint company_website_endpoint[]
+}
+
+model tbl_prefix {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  prefix    String @db.VarChar(255)
+  keyprefix Float  @db.Real
+  seq       Float  @db.Real
+}
+
+model tbl_payments {
+  id                   Int                    @id @unique @default(autoincrement())
+  user_id              String                 @db.Uuid
+  amount               Float                  @default(0.00)
+  currency             String                 @db.VarChar(255)
+  status               String                 @default(dbgenerated("1")) @db.VarChar(255)
+  created_at           DateTime?              @default(now())
+  updated_at           DateTime?              @updatedAt
+  payment_provider_id  String                 @db.Uuid
+  payment_details_2c2p payment_details_2c2p[]
+  payment_details_scb  payment_details_scb[]
+  payment_providers    payment_providers      @relation(fields: [payment_provider_id], references: [id])
+  user                 user                   @relation(fields: [user_id], references: [id])
+}
+
+model payment_providers {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String         @db.VarChar(255)
+  description  String         @db.VarChar(255)
+  created_at   DateTime?      @default(now())
+  updated_at   DateTime?      @updatedAt
+  tbl_payments tbl_payments[]
+}
+
+model payment_details_scb {
+  id           Int          @id @unique @default(autoincrement())
+  payment_id   Int
+  ref1         String       @db.VarChar(255)
+  ref2         String       @db.VarChar(255)
+  ref3         String       @db.VarChar(255)
+  qrcode       String
+  created_at   DateTime?    @default(now())
+  updated_at   DateTime?    @updatedAt
+  tbl_payments tbl_payments @relation(fields: [payment_id], references: [id])
+}
+
+model payment_details_2c2p {
+  id           Int          @id @unique @default(autoincrement())
+  payment_id   Int
+  link_payment String       @db.VarChar(255)
+  invoice_no   String       @db.VarChar(255)
+  created_at   DateTime?    @default(now())
+  updated_at   DateTime?    @updatedAt
+  tbl_payments tbl_payments @relation(fields: [payment_id], references: [id])
+}
+
+model tbl_log_payment {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  json       Json
+  ref        String    @db.VarChar(255)
+  type       String    @db.VarChar(255)
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
+}
+
+model componay_website_images {
+  id                     String           @id(map: "componay_website_images_pk") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_website_img_id String?          @db.Uuid
+  company_imges_url      String?          @db.VarChar(500)
+  company_website        company_website? @relation(fields: [company_website_img_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "componay_website_images_company_website_fk")
+}
+
+model mst_transection {
+  id                              String                            @id(map: "mst_transection_pk") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transection_name                String                            @db.VarChar
+  transection_code                String                            @unique(map: "mst_transection_unique") @db.VarChar
+  created_at                      DateTime?                         @default(now())
+  updated_at                      DateTime?
+  transaction_user_wallet_website transaction_user_wallet_website[]
+}
+
+model transaction_user_wallet_website {
+  id                     String              @id(map: "transaction_user_wallet_website_pk") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_wallet_website_id String              @db.Uuid
+  user_wallet_id         String              @db.Uuid
+  transection_amount     Int
+  transection_type_code  String              @db.VarChar
+  transection_status     Int                 @default(1)
+  created_at             DateTime?           @default(now())
+  updated_at             DateTime?
+  mst_transection        mst_transection     @relation(fields: [transection_type_code], references: [transection_code], onDelete: NoAction, map: "transaction_user_wallet_website_mst_transection_fk")
+  user_wallet_website    user_wallet_website @relation(fields: [user_wallet_website_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "transaction_user_wallet_website_user_wallet_website_fk")
+
+  @@index([user_wallet_website_id])
+}
+
+model user_sandbox {
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String          @db.Uuid
+  company_website_id String          @db.Uuid
+  created_at         DateTime?       @default(now())
+  updated_at         DateTime?       @updatedAt
+  company_website    company_website @relation(fields: [company_website_id], references: [id], onDelete: SetNull)
+}
+
+model transaction_user_wallet {
+  id                    String    @id(map: "transaction_user_wallet_pk") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_wallet_id        String    @db.VarChar
+  user_id               String    @db.VarChar
+  transection_amount    Int
+  transection_type_code String    @db.VarChar
+  transection_status    Int       @default(1)
+  refcode               String?   @db.VarChar
+  created_at            DateTime? @default(now())
+  updated_at            DateTime?
+}
+
+model promote_company_website {
+  id                 String           @id(map: "mst_banner_pk") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  filePath_poster    String           @db.VarChar(500)
+  created_at         DateTime?        @default(now())
+  updated_at         DateTime?
+  company_website_id String?          @db.Uuid
+  company_website    company_website? @relation(fields: [company_website_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "promote_company_website_company_website_fk")
+
+  @@index([company_website_id], map: "promote_company_website_company_website_id_idx")
+  @@map("promote-company-website")
+}
+
+model user_admin {
+  id            String  @id(map: "user_admin_pk") @db.Uuid
+  email         String? @db.VarChar
+  first_name    String  @db.VarChar(255)
+  last_name     String  @db.VarChar(255)
+  phone_number  String  @db.VarChar(255)
+  profile_image String? @db.VarChar(255)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model config_withdrawtdc {
+  id            String? @db.Uuid
+  stake_config  String? @db.VarChar
+  openaccount   String? @db.VarChar
+  limitwithdraw String? @db.VarChar
+  limitfrist    String? @db.VarChar
+
+  @@ignore
+}
+
+model mst_config {
+  id          String    @id(map: "mst_config_pk") @db.Uuid
+  code        String?   @unique(map: "mst_config_unique") @db.VarChar
+  type        String?   @db.VarChar
+  description String?   @db.VarChar
+  value       String?   @db.VarChar
+  created_at  DateTime? @default(now())
+  updated_at  DateTime?
+}
+
+enum status_enum {
+  draft
+  pending
+  approve
+  reject
 }
